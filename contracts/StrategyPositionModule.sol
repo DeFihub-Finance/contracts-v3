@@ -6,23 +6,23 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {BasePositionModule} from "./abstract/BasePositionModule.sol";
+import {UseTreasury} from "./abstract/UseTreasury.sol";
 
-contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP") {
+contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), UseTreasury {
     using SafeERC20 for IERC20;
 
     struct Investment {
-        uint16 percentageBps; // Percentage allocation in basis points, represents the portion of the deposited balance of this token to be used for a specific investment module.
+        uint16 percentageBP; // Percentage allocation in basis points, represents the portion of the deposited balance of this token to be used for a specific investment module.
         address module;
         bytes encodedParams; // Encoded data specific to the investment module
     }
 
     struct InvestParams {
-        uint strategyId;
-        address strategist;
-        address referrer;
-
         IERC20 inputToken;
         uint inputAmount;
+
+        StrategyIdentifier strategyIdentifier;
+        address referrer;
 
         Investment[] investments;
     }
@@ -37,10 +37,6 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint deadline;
     }
 
-    event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
-
-    error InvalidTotalPercentage();
-
     /// @notice positionId => StrategyPosition[]
     mapping(uint => StrategyPosition[]) internal _positions;
 
@@ -52,15 +48,64 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     mapping(address => mapping(IERC20 => uint)) public rewards;
 
     // settings
-    address public treasury;
-    uint public totalFeeBp;
-    uint public strategistPercentageBp;
-    uint public referrerPercentageBp;
+    uint16 public feeBP;
+    uint16 public strategistFeeSharingBP;
+    uint16 public referrerFeeSharingBP;
     uint public referralDuration;
+
+    event FeeUpdated(uint16 feeBP);
+    event FeeSharingUpdated(uint16 strategistFeeSharingBP, uint16 referrerFeeSharingBP);
+    event Fee(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
+    event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
+
+    error InvalidInput();
+    error InvalidTotalPercentage();
+
+    constructor(
+        address _owner,
+        address _treasury,
+        uint16 _feeBP,
+        uint16 _strategistFeeSharingBP,
+        uint16 _referrerFeeSharingBP,
+        uint _referralDuration
+    ) UseTreasury(_owner, _treasury) {
+        _setFeeSharing(_strategistFeeSharingBP, _referrerFeeSharingBP);
+        _setFeeBP(_feeBP);
+
+        referralDuration = _referralDuration;
+    }
+
+    function setFeeBP(uint16 _feeBP) external onlyOwner {
+        _setFeeBP(_feeBP);
+    }
+
+    /// @dev max fee is 1%
+    function _setFeeBP(uint16 _feeBP) internal {
+        if (_feeBP > 100)
+            revert InvalidInput();
+
+        feeBP = _feeBP;
+
+        emit FeeUpdated(_feeBP);
+    }
+
+    function setFeeSharing(uint16 _strategistFeeSharingBP, uint16 _referrerFeeSharingBP) external onlyOwner {
+        _setFeeSharing(_strategistFeeSharingBP, _referrerFeeSharingBP);
+    }
+
+    function _setFeeSharing(uint16 _strategistFeeSharingBP, uint16 _referrerFeeSharingBP) internal {
+        if ((_strategistFeeSharingBP + _referrerFeeSharingBP) > 1e4)
+            revert InvalidInput();
+
+        strategistFeeSharingBP = _strategistFeeSharingBP;
+        referrerFeeSharingBP = _referrerFeeSharingBP;
+
+        emit FeeSharingUpdated(_strategistFeeSharingBP, _referrerFeeSharingBP);
+    }
 
     // TODO add invest with permit and invest native
 
-    function _invest(
+    function _createPosition(
         uint _strategyPositionId,
         bytes memory _encodedInvestments
     ) internal override {
@@ -72,21 +117,21 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint amount = _collectFees(
             params.inputToken,
             _pullToken(params.inputToken, params.inputAmount),
-            params.strategist,
+            params.strategyIdentifier,
             _getReferrer(msg.sender)
         );
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentage += investment.percentageBps;
+            totalPercentage += investment.percentageBP;
 
             params.inputToken.safeIncreaseAllowance(
                 investment.module,
-                (amount * investment.percentageBps) / 1e4
+                (amount * investment.percentageBP) / 1e4
             );
 
-            uint modulePositionId = BasePositionModule(investment.module).invest(investment.encodedParams);
+            uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
             _positions[_strategyPositionId][i] = StrategyPosition({
                 moduleAddress: investment.module,
@@ -98,19 +143,42 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             revert InvalidTotalPercentage();
     }
 
+    function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
+        bytes[] memory data = abi.decode(_data, (bytes[]));
+
+        for (uint i; i < _positions[_positionId].length; ++i) {
+            StrategyPosition memory position = _positions[_positionId][i];
+
+            BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.modulePositionId, data[i]);
+        }
+    }
+
     function _collectFees(
         IERC20 _token,
         uint _inputAmount,
-        address _strategist,
-        address _referrer
+        StrategyIdentifier memory _strategy,
+        Referral memory _referral
     ) internal returns (uint remainingAmount) {
-        uint totalFee = (_inputAmount * totalFeeBp) / 1e4;
-        uint strategistFee = (totalFee * strategistPercentageBp) / 1e4;
-        uint referrerFee = (totalFee * referrerPercentageBp) / 1e4;
+        uint totalFee = (_inputAmount * feeBP) / 1e4;
+        uint strategistFee;
+        uint referrerFee;
 
-        rewards[_strategist][_token] += strategistFee;
-        rewards[_referrer][_token] += referrerFee;
-        rewards[treasury][_token] += totalFee - strategistFee - referrerFee;
+        if (_strategy.strategist != address(0)) {
+            strategistFee = (totalFee * strategistFeeSharingBP) / 1e4;
+            rewards[_strategy.strategist][_token] += strategistFee;
+            emit Fee(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
+        }
+
+        if (_referral.referrer != address(0) && block.timestamp < _referral.deadline) {
+            referrerFee = (totalFee * referrerFeeSharingBP) / 1e4;
+            rewards[_referral.referrer][_token] += referrerFee;
+            emit Fee(msg.sender, _referral.referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
+        }
+
+        // TODO gasopt: test if saving treasury to variable saves gas
+        uint treasuryFee = totalFee - strategistFee - referrerFee;
+        rewards[_getTreasury()][_token] += treasuryFee;
+        emit Fee(msg.sender, _getTreasury(), _strategy.externalRef, _token, treasuryFee, FeeReceiver.TREASURY);
 
         return _inputAmount - totalFee;
     }
@@ -136,11 +204,11 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         emit ReferralLinked(msg.sender, _referrer, deadline);
     }
 
-    function _getReferrer(address _user) internal view returns (address) {
+    function _getReferrer(address _user) internal view returns (Referral memory) {
         Referral memory referral = _referrals[_user];
 
         return block.timestamp > referral.deadline
-            ? address(0)
-            : referral.referrer;
+            ? Referral({referrer: address(0), deadline: 0})
+            : referral;
     }
 }
