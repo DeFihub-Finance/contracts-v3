@@ -117,8 +117,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint amount = _collectFees(
             params.inputToken,
             _pullToken(params.inputToken, params.inputAmount),
-            params.strategyIdentifier,
-            _getReferrer(msg.sender)
+            params.strategyIdentifier
         );
 
         for (uint i; i < params.investments.length; ++i) {
@@ -156,9 +155,9 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     function _collectFees(
         IERC20 _token,
         uint _inputAmount,
-        StrategyIdentifier memory _strategy,
-        Referral memory _referral
+        StrategyIdentifier memory _strategy
     ) internal returns (uint remainingAmount) {
+        address referrer = _getReferrer(msg.sender);
         uint totalFee = (_inputAmount * feeBP) / 1e4;
         uint strategistFee;
         uint referrerFee;
@@ -169,10 +168,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             emit Fee(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
         }
 
-        if (_referral.referrer != address(0) && block.timestamp < _referral.deadline) {
+        if (referrer != address(0)) {
             referrerFee = (totalFee * referrerFeeSharingBP) / 1e4;
-            rewards[_referral.referrer][_token] += referrerFee;
-            emit Fee(msg.sender, _referral.referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
+            rewards[referrer][_token] += referrerFee;
+            emit Fee(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
@@ -204,11 +203,9 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         emit ReferralLinked(msg.sender, _referrer, deadline);
     }
 
-    function _getReferrer(address _user) internal view returns (Referral memory) {
+    function _getReferrer(address _user) internal view returns (address) {
         Referral memory referral = _referrals[_user];
 
-        return block.timestamp > referral.deadline
-            ? Referral({referrer: address(0), deadline: 0})
-            : referral;
+        return block.timestamp > referral.deadline ? address(0) : referral.referrer;
     }
 }
