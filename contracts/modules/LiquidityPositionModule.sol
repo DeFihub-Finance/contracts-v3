@@ -22,13 +22,12 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint24 fee;
         int24 tickLower;
         int24 tickUpper;
-        uint depositAmountInputToken;
-        bytes swapToken0;
-        bytes swapToken1;
-        uint swapAmountToken0;
-        uint swapAmountToken1;
-        uint amount0Min;
-        uint amount1Min;
+        bytes swap0;
+        bytes swap1;
+        uint swapAmount0;
+        uint swapAmount1;
+        uint minAmount0;
+        uint minAmount1;
     }
 
     struct InvestParams {
@@ -131,16 +130,16 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 revert SwapAmountExceedsBalance();
 
             uint inputAmount0 = HubRouter.execute(
-                investment.swapToken0,
+                investment.swap0,
                 investment.inputToken,
                 investment.token0,
-                investment.swapAmountToken0
+                investment.swapAmount0
             );
             uint inputAmount1 = HubRouter.execute(
-                investment.swapToken1,
+                investment.swap1,
                 investment.inputToken,
                 investment.token1,
-                investment.swapAmountToken1
+                investment.swapAmount1
             );
 
             investment.token0.safeIncreaseAllowance(address(investment.positionManager), inputAmount0);
@@ -155,8 +154,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                     tickUpper: investment.tickUpper,
                     amount0Desired: inputAmount0,
                     amount1Desired: inputAmount1,
-                    amount0Min: investment.amount0Min,
-                    amount1Min: investment.amount1Min,
+                    amount0Min: investment.minAmount0,
+                    amount1Min: investment.minAmount1,
                     recipient: address(this),
                     deadline: block.timestamp
                 })

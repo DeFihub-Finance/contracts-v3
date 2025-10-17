@@ -12,9 +12,12 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     using SafeERC20 for IERC20;
 
     struct Investment {
-        uint16 percentageBP; // Percentage allocation in basis points, represents the portion of the deposited balance of this token to be used for a specific investment module.
+        // Represents the portion of the deposited balance allocated for this specific investment module.
+        uint16 allocationBP;
+        // Where to invest the allocated funds
         address module;
-        bytes encodedParams; // Encoded data specific to the investment module
+        // Encoded data specific to the investment module
+        bytes encodedParams;
     }
 
     struct InvestParams {
@@ -123,11 +126,11 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentage += investment.percentageBP;
+            totalPercentage += investment.allocationBP;
 
             params.inputToken.safeIncreaseAllowance(
                 investment.module,
-                (amount * investment.percentageBP) / 1e4
+                (amount * investment.allocationBP) / 1e4
             );
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
