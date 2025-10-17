@@ -35,7 +35,7 @@ abstract contract BasePositionModule is ERC721 {
     function _mintPositionNFT() internal returns (uint positionId) {
         positionId = _nextPositionId;
 
-        _nextPositionId += 1;
+        _nextPositionId++;
 
         _safeMint(msg.sender, positionId);
     }
