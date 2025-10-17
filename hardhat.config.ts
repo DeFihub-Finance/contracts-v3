@@ -9,10 +9,14 @@ const config: HardhatUserConfig = {
     profiles: {
       default: {
         version: "0.8.30",
+        settings: {
+          viaIR: true,
+        }
       },
       production: {
         version: "0.8.30",
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 800,
