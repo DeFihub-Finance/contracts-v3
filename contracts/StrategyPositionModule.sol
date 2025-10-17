@@ -13,7 +13,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     struct Investment {
         // Represents the portion of the deposited balance allocated for this specific investment module.
-        uint16 allocationBP;
+        uint16 allocationBps;
         // Where to invest the allocated funds
         address module;
         // Encoded data specific to the investment module
@@ -51,13 +51,13 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     mapping(address => mapping(IERC20 => uint)) public rewards;
 
     // settings
-    uint16 public feeBP;
-    uint16 public strategistFeeSharingBP;
-    uint16 public referrerFeeSharingBP;
+    uint16 public feeBps;
+    uint16 public strategistFeeSharingBps;
+    uint16 public referrerFeeSharingBps;
     uint public referralDuration;
 
-    event FeeUpdated(uint16 feeBP);
-    event FeeSharingUpdated(uint16 strategistFeeSharingBP, uint16 referrerFeeSharingBP);
+    event FeeUpdated(uint16 feeBps);
+    event FeeSharingUpdated(uint16 strategistFeeSharingBps, uint16 referrerFeeSharingBps);
     event Fee(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
     event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
@@ -67,43 +67,43 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     constructor(
         address _owner,
         address _treasury,
-        uint16 _feeBP,
-        uint16 _strategistFeeSharingBP,
-        uint16 _referrerFeeSharingBP,
+        uint16 _feeBps,
+        uint16 _strategistFeeSharingBps,
+        uint16 _referrerFeeSharingBps,
         uint _referralDuration
     ) UseTreasury(_owner, _treasury) {
-        _setFeeSharing(_strategistFeeSharingBP, _referrerFeeSharingBP);
-        _setFeeBP(_feeBP);
+        _setFeeSharing(_strategistFeeSharingBps, _referrerFeeSharingBps);
+        _setFeeBps(_feeBps);
 
         referralDuration = _referralDuration;
     }
 
-    function setFeeBP(uint16 _feeBP) external onlyOwner {
-        _setFeeBP(_feeBP);
+    function setFeeBps(uint16 _feeBps) external onlyOwner {
+        _setFeeBps(_feeBps);
     }
 
     /// @dev max fee is 1%
-    function _setFeeBP(uint16 _feeBP) internal {
-        if (_feeBP > 100)
+    function _setFeeBps(uint16 _feeBps) internal {
+        if (_feeBps > 100)
             revert InvalidInput();
 
-        feeBP = _feeBP;
+        feeBps = _feeBps;
 
-        emit FeeUpdated(_feeBP);
+        emit FeeUpdated(_feeBps);
     }
 
-    function setFeeSharing(uint16 _strategistFeeSharingBP, uint16 _referrerFeeSharingBP) external onlyOwner {
-        _setFeeSharing(_strategistFeeSharingBP, _referrerFeeSharingBP);
+    function setFeeSharing(uint16 _strategistFeeSharingBps, uint16 _referrerFeeSharingBps) external onlyOwner {
+        _setFeeSharing(_strategistFeeSharingBps, _referrerFeeSharingBps);
     }
 
-    function _setFeeSharing(uint16 _strategistFeeSharingBP, uint16 _referrerFeeSharingBP) internal {
-        if ((_strategistFeeSharingBP + _referrerFeeSharingBP) > 1e4)
+    function _setFeeSharing(uint16 _strategistFeeSharingBps, uint16 _referrerFeeSharingBps) internal {
+        if ((_strategistFeeSharingBps + _referrerFeeSharingBps) > 1e4)
             revert InvalidInput();
 
-        strategistFeeSharingBP = _strategistFeeSharingBP;
-        referrerFeeSharingBP = _referrerFeeSharingBP;
+        strategistFeeSharingBps = _strategistFeeSharingBps;
+        referrerFeeSharingBps = _referrerFeeSharingBps;
 
-        emit FeeSharingUpdated(_strategistFeeSharingBP, _referrerFeeSharingBP);
+        emit FeeSharingUpdated(_strategistFeeSharingBps, _referrerFeeSharingBps);
     }
 
     // TODO add invest with permit and invest native
@@ -126,11 +126,11 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentage += investment.allocationBP;
+            totalPercentage += investment.allocationBps;
 
             params.inputToken.safeIncreaseAllowance(
                 investment.module,
-                (amount * investment.allocationBP) / 1e4
+                (amount * investment.allocationBps) / 1e4
             );
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
@@ -161,18 +161,18 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         StrategyIdentifier memory _strategy
     ) internal returns (uint remainingAmount) {
         address referrer = _getReferrer(msg.sender);
-        uint totalFee = (_inputAmount * feeBP) / 1e4;
+        uint totalFee = (_inputAmount * feeBps) / 1e4;
         uint strategistFee;
         uint referrerFee;
 
         if (_strategy.strategist != address(0)) {
-            strategistFee = (totalFee * strategistFeeSharingBP) / 1e4;
+            strategistFee = (totalFee * strategistFeeSharingBps) / 1e4;
             rewards[_strategy.strategist][_token] += strategistFee;
             emit Fee(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
         }
 
         if (referrer != address(0)) {
-            referrerFee = (totalFee * referrerFeeSharingBP) / 1e4;
+            referrerFee = (totalFee * referrerFeeSharingBps) / 1e4;
             rewards[referrer][_token] += referrerFee;
             emit Fee(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
         }

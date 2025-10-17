@@ -35,7 +35,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint inputAmount;
         Investment[] investments;
         StrategyIdentifier strategy;
-        uint16 feeOnRewardsBP;
+        uint16 feeOnRewardsBps;
     }
 
     struct Position {
@@ -45,7 +45,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         IERC20 token0; // TODO gasopt: check if saving tokens will save gas on withdrawal
         IERC20 token1;
         StrategyIdentifier strategy;
-        uint16 feeOnRewardsBP;
+        uint16 feeOnRewardsBps;
     }
 
     struct MinOutputs {
@@ -76,7 +76,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     /// @notice user => token => rewards
     mapping(address => mapping(IERC20 => uint)) public rewards;
 
-    uint16 internal _strategistFeeSharingBP;
+    uint16 internal _strategistFeeSharingBps;
 
     event Fee(
         address from,
@@ -89,7 +89,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         FeeReceiver receiver
     );
     event PositionClosed(address owner, address beneficiary, uint positionId, uint[2][] withdrawnAmounts);
-    event FeeSharingUpdated(uint16 strategistFeeSharingBP);
+    event FeeSharingUpdated(uint16 strategistFeeSharingBps);
 
     error InvalidBasisPoints();
     error SwapAmountExceedsBalance();
@@ -97,22 +97,22 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     constructor(
         address _owner,
         address _treasury,
-        uint16 _newStrategistFeeSharingBP
+        uint16 _newStrategistFeeSharingBps
     ) UseTreasury(_owner, _treasury) {
-        _setStrategistFeeSharingBP(_newStrategistFeeSharingBP);
+        _setStrategistFeeSharingBps(_newStrategistFeeSharingBps);
     }
 
-    function setStrategistFeeSharingBP(uint16 _newStrategistFeeSharingBP) external onlyOwner {
-        _setStrategistFeeSharingBP(_newStrategistFeeSharingBP);
+    function setStrategistFeeSharingBps(uint16 _newStrategistFeeSharingBps) external onlyOwner {
+        _setStrategistFeeSharingBps(_newStrategistFeeSharingBps);
     }
 
-    function _setStrategistFeeSharingBP(uint16 _newStrategistFeeSharingBP) internal {
-        if (_newStrategistFeeSharingBP > 1e4)
+    function _setStrategistFeeSharingBps(uint16 _newStrategistFeeSharingBps) internal {
+        if (_newStrategistFeeSharingBps > 1e4)
             revert InvalidBasisPoints();
 
-        _strategistFeeSharingBP = _newStrategistFeeSharingBP;
+        _strategistFeeSharingBps = _newStrategistFeeSharingBps;
 
-        emit FeeSharingUpdated(_newStrategistFeeSharingBP);
+        emit FeeSharingUpdated(_newStrategistFeeSharingBps);
     }
 
     function _createPosition(
@@ -126,7 +126,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            if (amount < (investment.swapAmountToken0 + investment.swapAmountToken1))
+            if (amount < (investment.swapAmount0 + investment.swapAmount1))
                 revert SwapAmountExceedsBalance();
 
             uint inputAmount0 = HubRouter.execute(
@@ -168,7 +168,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 token0: investment.token0,
                 token1: investment.token1,
                 strategy: params.strategy,
-                feeOnRewardsBP: params.feeOnRewardsBP
+                feeOnRewardsBps: params.feeOnRewardsBps
             });
         }
     }
@@ -194,7 +194,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 rewards1,
                 position.strategy,
                 [_positionId, index],
-                position.feeOnRewardsBP
+                position.feeOnRewardsBps
             );
 
             position.positionManager.decreaseLiquidity(
@@ -250,13 +250,13 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint _amount1,
         StrategyIdentifier memory _strategy,
         uint[2] memory _positionId,
-        uint16 _feeOnRewardsBP
+        uint16 _feeOnRewardsBps
     ) internal returns (uint userAmount0, uint userAmount1) {
-        if (_feeOnRewardsBP == 0)
+        if (_feeOnRewardsBps == 0)
             return (_amount0, _amount1);
 
-        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amount0, _feeOnRewardsBP);
-        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amount1, _feeOnRewardsBP);
+        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amount0, _feeOnRewardsBps);
+        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amount1, _feeOnRewardsBps);
 
         rewards[_strategy.strategist][_pair.token0] += split0.strategistAmount;
         rewards[_strategy.strategist][_pair.token1] += split1.strategistAmount;
@@ -292,10 +292,10 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
     function _calculateLiquidityRewardSplits(
         uint _amount,
-        uint16 _strategyLiquidityFeeBP
+        uint16 _strategyLiquidityFeeBps
     ) internal view returns (RewardSplit memory split) {
-        uint totalFees = _amount * _strategyLiquidityFeeBP / 1e4;
-        uint strategistAmount = totalFees * _strategistFeeSharingBP / 1e4;
+        uint totalFees = _amount * _strategyLiquidityFeeBps / 1e4;
+        uint strategistAmount = totalFees * _strategistFeeSharingBps / 1e4;
 
         return RewardSplit({
             userAmount: _amount - totalFees,
