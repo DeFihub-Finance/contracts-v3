@@ -58,7 +58,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     event FeeUpdated(uint16 feeBps);
     event FeeSharingUpdated(uint16 strategistFeeSharingBps, uint16 referrerFeeSharingBps);
-    event Fee(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
+    event FeeDistributed(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
     event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
     error InvalidInput();
@@ -168,19 +168,19 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         if (_strategy.strategist != address(0)) {
             strategistFee = (totalFee * strategistFeeSharingBps) / 1e4;
             rewards[_strategy.strategist][_token] += strategistFee;
-            emit Fee(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
+            emit FeeDistributed(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
         }
 
         if (referrer != address(0)) {
             referrerFee = (totalFee * referrerFeeSharingBps) / 1e4;
             rewards[referrer][_token] += referrerFee;
-            emit Fee(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
+            emit FeeDistributed(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
         uint treasuryFee = totalFee - strategistFee - referrerFee;
         rewards[_getTreasury()][_token] += treasuryFee;
-        emit Fee(msg.sender, _getTreasury(), _strategy.externalRef, _token, treasuryFee, FeeReceiver.TREASURY);
+        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, treasuryFee, FeeReceiver.TREASURY);
 
         return _inputAmount - totalFee;
     }
