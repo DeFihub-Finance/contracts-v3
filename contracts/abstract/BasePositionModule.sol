@@ -9,28 +9,48 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 abstract contract BasePositionModule is ERC721 {
     using SafeERC20 for IERC20;
 
-    struct TokenAllocation {
-        address token;
-        uint16 percentageBps;
+    struct StrategyIdentifier {
+        address strategist;
+        uint externalRef;
+    }
+
+    enum FeeReceiver {
+        STRATEGIST,
+        REFERRER,
+        TREASURY
     }
 
     uint internal _nextPositionId;
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
-    function invest(bytes memory _encodedInvestments) external returns (uint positionId) {
+    function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
         positionId = _mintPositionNFT();
 
-        _invest(positionId, _encodedInvestments);
+        _createPosition(positionId, _encodedInvestments);
 
         return positionId;
     }
 
     /// @param 0: positionId
     /// @param 1: encodedInvestments
-    function _invest(uint, bytes memory) internal virtual;
+    function _createPosition(uint, bytes memory) internal virtual;
 
-    // todo add close function that burns the nft and withdraws funds
+    // maybe call close position or burn
+    function closePosition(address _beneficiary, uint _positionId, bytes memory _data) external {
+        address owner = _ownerOf(_positionId);
+
+        _checkAuthorized(owner, msg.sender, _positionId);
+
+        _burn(_positionId);
+
+        _closePosition(_beneficiary, _positionId, _data);
+    }
+
+    /// @param 0: beneficiary
+    /// @param 1: positionId
+    /// @param 2: encodedData
+    function _closePosition(address, uint, bytes memory) internal virtual;
 
     function _mintPositionNFT() internal returns (uint positionId) {
         positionId = _nextPositionId;
