@@ -89,7 +89,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint amount1,
         FeeReceiver receiver
     );
-    event PositionClosed(address owner, address beneficiary, uint positionId, uint[][] withdrawnAmounts);
+    event PositionClosed(address owner, address beneficiary, uint positionId, uint[2][] withdrawnAmounts);
     event FeeSharingUpdated(uint16 strategistFeeSharingBP);
 
     error InvalidBasisPoints();
@@ -177,7 +177,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
         MinOutputs[] memory minOutputs = abi.decode(_data, (MinOutputs[]));
         Position[] memory positions = _positions[_positionId];
-        uint[][] memory withdrawnAmounts = new uint[][](positions.length);
+        uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
 
         for (uint index; index < positions.length; ++index) {
             Position memory position = positions[index];
@@ -216,10 +216,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             pair.token0.safeTransfer(_beneficiary, transferAmount0);
             pair.token1.safeTransfer(_beneficiary, transferAmount1);
 
-            withdrawnAmounts[index] = new uint[](2);
-
-            withdrawnAmounts[index][0] = transferAmount0;
-            withdrawnAmounts[index][1] = transferAmount1;
+            withdrawnAmounts[index] = [transferAmount0, transferAmount1];
         }
 
         emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
