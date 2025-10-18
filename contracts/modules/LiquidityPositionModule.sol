@@ -121,13 +121,17 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
-        uint amount = _pullToken(params.inputToken, params.inputAmount);
+        uint remainingAmount = _pullToken(params.inputToken, params.inputAmount);
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            if (amount < (investment.swapAmount0 + investment.swapAmount1))
+            uint required = investment.swapAmount0 + investment.swapAmount1;
+
+            if (remainingAmount < required)
                 revert SwapAmountExceedsBalance();
+
+            remainingAmount -= required;
 
             uint inputAmount0 = HubRouter.execute(
                 investment.swap0,
