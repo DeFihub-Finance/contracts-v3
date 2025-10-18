@@ -9,13 +9,13 @@ import {IUniversalRouter} from "../interfaces/external/IUniversalRouter.sol";
 library HubRouter {
     using SafeERC20 for IERC20;
 
-    error InvalidSwap();
-
     struct SwapData {
         IUniversalRouter router;
         bytes commands;
         bytes[] inputs;
     }
+
+    error InvalidSwap();
 
     /**
      * @notice Performs a zap operation using the specified protocol call data.
