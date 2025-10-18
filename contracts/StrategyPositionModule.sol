@@ -135,10 +135,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
-            _positions[_strategyPositionId][i] = StrategyPosition({
+            _positions[_strategyPositionId].push(StrategyPosition({
                 moduleAddress: investment.module,
                 modulePositionId: modulePositionId
-            });
+            }));
         }
 
         if (totalPercentage != 100)

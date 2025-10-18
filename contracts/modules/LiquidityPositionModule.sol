@@ -165,7 +165,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 })
             );
 
-            _positions[_positionId][i] = Position({
+            _positions[_positionId].push(Position({
                 positionManager: investment.positionManager,
                 tokenId: tokenId,
                 liquidity: liquidity,
@@ -173,7 +173,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 token1: investment.token1,
                 strategy: params.strategy,
                 feeOnRewardsBps: params.feeOnRewardsBps
-            });
+            }));
         }
     }
 
