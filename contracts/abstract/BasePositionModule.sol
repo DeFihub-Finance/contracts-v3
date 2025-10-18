@@ -22,6 +22,8 @@ abstract contract BasePositionModule is ERC721 {
 
     uint internal _nextPositionId;
 
+    error Unauthorized();
+
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
     function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
@@ -36,11 +38,19 @@ abstract contract BasePositionModule is ERC721 {
     /// @param 1: encodedInvestments
     function _createPosition(uint, bytes memory) internal virtual;
 
+    function collectPosition(address _beneficiary, uint _positionId, bytes memory _data) external {
+        if (msg.sender != _ownerOf(_positionId))
+            revert Unauthorized();
+
+        _collectPosition(_beneficiary, _positionId, _data);
+    }
+
+    function _collectPosition(address, uint, bytes memory) internal virtual;
+
     // maybe call close position or burn
     function closePosition(address _beneficiary, uint _positionId, bytes memory _data) external {
-        address owner = _ownerOf(_positionId);
-
-        _checkAuthorized(owner, msg.sender, _positionId);
+        if (msg.sender != _ownerOf(_positionId))
+            revert Unauthorized();
 
         _burn(_positionId);
 
