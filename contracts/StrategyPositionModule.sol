@@ -108,6 +108,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     // TODO add invest with permit and invest native
 
+    // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
         uint _strategyPositionId,
         bytes memory _encodedInvestments
