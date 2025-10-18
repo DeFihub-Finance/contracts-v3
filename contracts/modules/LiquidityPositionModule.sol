@@ -88,6 +88,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint amount1,
         FeeReceiver receiver
     );
+    event PositionCollected(address owner, address beneficiary, uint positionId, uint[2][] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint positionId, uint[2][] withdrawnAmounts);
     event FeeSharingUpdated(uint16 strategistFeeSharingBps);
 
@@ -175,6 +176,34 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 feeOnRewardsBps: params.feeOnRewardsBps
             }));
         }
+    }
+
+    function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
+        Position[] memory positions = _positions[_positionId];
+        uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
+
+        for (uint index; index < positions.length; ++index) {
+            Position memory position = positions[index];
+            Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
+
+            (uint rewards0, uint rewards1) = _claimLiquidityPositionTokens(position, pair);
+
+            (uint userRewards0, uint userRewards1) = _distributeLiquidityRewards(
+                pair,
+                rewards0,
+                rewards1,
+                position.strategy, // TODO gasopt: test gas cost of passing the entire position as a single argument
+                [_positionId, index],
+                position.feeOnRewardsBps
+            );
+
+            pair.token0.safeTransfer(msg.sender, userRewards0);
+            pair.token1.safeTransfer(msg.sender, userRewards1);
+
+            withdrawnAmounts[index] = [userRewards0, userRewards1];
+        }
+
+        emit PositionCollected(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
     }
 
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
