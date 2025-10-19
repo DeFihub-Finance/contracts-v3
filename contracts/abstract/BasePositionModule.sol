@@ -68,6 +68,6 @@ abstract contract BasePositionModule is ERC721 {
 
         _token.safeTransferFrom(msg.sender, address(this), _inputAmount);
 
-        return IERC20(_token).balanceOf(address(this)) - initialBalance;
+        return _token.balanceOf(address(this)) - initialBalance;
     }
 }
