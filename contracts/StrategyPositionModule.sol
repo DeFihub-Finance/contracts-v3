@@ -30,7 +30,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         Investment[] investments;
     }
 
-    struct StrategyPosition {
+    struct Position {
         address moduleAddress;
         uint modulePositionId;
     }
@@ -40,8 +40,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint deadline;
     }
 
-    /// @notice positionId => StrategyPosition[]
-    mapping(uint => StrategyPosition[]) internal _positions;
+    /// @notice positionId => Position[]
+    mapping(uint => Position[]) internal _positions;
 
     /// @notice referred account => referrer account
     mapping(address => Referral) internal _referrals;
@@ -76,6 +76,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         _setFeeBps(_feeBps);
 
         referralDuration = _referralDuration;
+    }
+
+    function getPositions(uint _positionId) external view returns (Position[] memory) {
+        return _positions[_positionId];
     }
 
     function setFeeBps(uint16 _feeBps) external onlyOwner {
@@ -136,7 +140,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
-            _positions[_strategyPositionId].push(StrategyPosition({
+            _positions[_strategyPositionId].push(Position({
                 moduleAddress: investment.module,
                 modulePositionId: modulePositionId
             }));
@@ -150,7 +154,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
         for (uint i; i < _positions[_positionId].length; ++i) {
-            StrategyPosition memory position = _positions[_positionId][i];
+            Position memory position = _positions[_positionId][i];
 
             BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.modulePositionId, data[i]);
         }
@@ -160,7 +164,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
         for (uint i; i < _positions[_positionId].length; ++i) {
-            StrategyPosition memory position = _positions[_positionId][i];
+            Position memory position = _positions[_positionId][i];
 
             BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.modulePositionId, data[i]);
         }

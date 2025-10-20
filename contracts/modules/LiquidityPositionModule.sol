@@ -71,7 +71,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
     /// @notice Links a liquidity module position to multiple liquidity positions in decentralized exchanges
     /// @dev modulePositionId => Position[]
-    mapping(uint => Position[]) public _positions;
+    mapping(uint => Position[]) internal _positions;
 
     /// @notice user => token => rewards
     mapping(address => mapping(IERC20 => uint)) public rewards;
@@ -101,6 +101,10 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint16 _newStrategistFeeSharingBps
     ) UseTreasury(_owner, _treasury) {
         _setStrategistFeeSharingBps(_newStrategistFeeSharingBps);
+    }
+
+    function getPositions(uint _positionId) external view returns (Position[] memory) {
+        return _positions[_positionId];
     }
 
     function setStrategistFeeSharingBps(uint16 _newStrategistFeeSharingBps) external onlyOwner {
