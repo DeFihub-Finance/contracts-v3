@@ -30,13 +30,16 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         uint amount;
     }
 
-    mapping(uint => Position[]) public _positions;
+    mapping(uint => Position[]) internal _positions;
+    mapping(uint => bool) internal _closedPositions;
 
-    event PositionCollected(address owner, address beneficiary, uint positionId, uint[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint positionId, uint[] withdrawnAmounts);
 
     error InvalidBasisPoints();
-    error SwapAmountExceedsBalance();
+
+    function getPositions(uint _positionId) external view returns (Position[] memory) {
+        return _positions[_positionId];
+    }
 
     function _createPosition(
         uint _positionId,
@@ -53,27 +56,45 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
             usedAllocationBps += investment.allocationBps;
 
             _positions[_positionId].push(
-                Position(
-                    investment.token,
-                    HubRouter.execute(
+                Position({
+                    token: investment.token,
+                    amount: HubRouter.execute(
                         investment.swap,
                         params.inputToken,
                         investment.token,
                         totalAmount * investment.allocationBps / 1e4
                     )
-                )
+                })
             );
         }
 
-        if (usedAllocationBps != 100)
+        if (usedAllocationBps != 1e4)
             revert InvalidBasisPoints();
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-
+        _claimTokens(_beneficiary, _positionId);
     }
 
-    function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
+    function _closePosition(address _beneficiary, uint _positionId, bytes memory) internal override {
+        _claimTokens(_beneficiary, _positionId);
+    }
 
+    function _claimTokens(address _beneficiary, uint _positionId) internal {
+        if (_closedPositions[_positionId])
+            return;
+
+        _closedPositions[_positionId] = true;
+
+        Position[] memory positions = _positions[_positionId];
+        uint[] memory withdrawnAmounts = new uint[](positions.length);
+
+        for (uint i; i < positions.length; ++i) {
+            Position memory position = positions[i];
+            withdrawnAmounts[i] = position.amount;
+            position.token.safeTransfer(_beneficiary, position.amount);
+        }
+
+        emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
     }
 }
