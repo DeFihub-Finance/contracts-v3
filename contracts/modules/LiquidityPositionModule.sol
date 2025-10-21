@@ -48,19 +48,14 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint16 feeOnRewardsBps;
     }
 
-    struct MinOutputs {
-        uint token0;
-        uint token1;
-    }
-
     struct Pair {
         IERC20 token0;
         IERC20 token1;
     }
 
-    struct PairBalance {
-        uint balance0;
-        uint balance1;
+    struct PairAmounts {
+        uint amount0;
+        uint amount1;
     }
 
     struct RewardSplit {
@@ -88,7 +83,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint amount1,
         FeeReceiver receiver
     );
-    event PositionClosed(address owner, address beneficiary, uint positionId, uint[2][] withdrawnAmounts);
+    event PositionClosed(address owner, address beneficiary, uint positionId, PairAmounts[] withdrawnAmounts);
     event FeeSharingUpdated(uint16 strategistFeeSharingBps);
 
     error InvalidBasisPoints();
@@ -174,24 +169,20 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     }
 
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
-        MinOutputs[] memory minOutputs = abi.decode(_data, (MinOutputs[]));
         Position[] memory positions = _positions[_positionId];
-        uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
+        PairAmounts[] memory withdrawnAmounts = new PairAmounts[](positions.length);
+        PairAmounts[] memory minOutputs = abi.decode(_data, (PairAmounts[]));
 
         for (uint index; index < positions.length; ++index) {
             Position memory position = positions[index];
             Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
-            MinOutputs memory minOutput = minOutputs.length > index
+            PairAmounts memory minOutput = minOutputs.length > index
                 ? minOutputs[index]
-                : MinOutputs(0, 0);
+                : PairAmounts(0, 0);
 
-            // Claim must be called before decreasing liquidity to subtract fees only from rewards
-            (uint rewards0, uint rewards1) = _claimLiquidityPositionTokens(position, pair);
-
-            (uint userRewards0, uint userRewards1) = _distributeLiquidityRewards(
+            PairAmounts memory userRewards = _distributeLiquidityRewards(
                 pair,
-                rewards0,
-                rewards1,
+                _claimLiquidityPositionTokens(position, pair),
                 position.strategy,
                 [_positionId, index],
                 position.feeOnRewardsBps
@@ -201,21 +192,23 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                     tokenId: position.tokenId,
                     liquidity: position.liquidity,
-                    amount0Min: minOutput.token0,
-                    amount1Min: minOutput.token1,
+                    amount0Min: minOutput.amount0,
+                    amount1Min: minOutput.amount1,
                     deadline: block.timestamp
                 })
             );
 
-            (uint balance0, uint balance1) = _claimLiquidityPositionTokens(position, pair);
+            PairAmounts memory balances = _claimLiquidityPositionTokens(position, pair);
 
-            uint transferAmount0 = balance0 + userRewards0;
-            uint transferAmount1 = balance1 + userRewards1;
+            PairAmounts memory transferAmounts = PairAmounts({
+                amount0: balances.amount0 + userRewards.amount0,
+                amount1: balances.amount1 + userRewards.amount1
+            });
 
-            pair.token0.safeTransfer(_beneficiary, transferAmount0);
-            pair.token1.safeTransfer(_beneficiary, transferAmount1);
+            pair.token0.safeTransfer(_beneficiary, transferAmounts.amount0);
+            pair.token1.safeTransfer(_beneficiary, transferAmounts.amount1);
 
-            withdrawnAmounts[index] = [transferAmount0, transferAmount1];
+            withdrawnAmounts[index] = transferAmounts;
         }
 
         emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
@@ -224,7 +217,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     function _claimLiquidityPositionTokens(
         Position memory _position,
         Pair memory _pair
-    ) internal returns (uint amount0, uint amount1) {
+    ) internal returns (PairAmounts memory amounts) {
         uint initialBalance0 = _pair.token0.balanceOf(address(this));
         uint initialBalance1 = _pair.token1.balanceOf(address(this));
 
@@ -240,23 +233,24 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint finalBalance0 = _pair.token0.balanceOf(address(this));
         uint finalBalance1 = _pair.token1.balanceOf(address(this));
 
-        amount0 = finalBalance0 - initialBalance0;
-        amount1 = finalBalance1 - initialBalance1;
+        return PairAmounts({
+            amount0: finalBalance0 - initialBalance0,
+            amount1: finalBalance1 - initialBalance1
+        });
     }
 
     function _distributeLiquidityRewards(
         Pair memory _pair,
-        uint _amount0,
-        uint _amount1,
+        PairAmounts memory _amounts,
         StrategyIdentifier memory _strategy,
         uint[2] memory _positionId,
         uint16 _feeOnRewardsBps
-    ) internal returns (uint userAmount0, uint userAmount1) {
+    ) internal returns (PairAmounts memory amounts) {
         if (_feeOnRewardsBps == 0)
-            return (_amount0, _amount1);
+            return _amounts;
 
-        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amount0, _feeOnRewardsBps);
-        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amount1, _feeOnRewardsBps);
+        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amounts.amount0, _feeOnRewardsBps);
+        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amounts.amount1, _feeOnRewardsBps);
 
         rewards[_strategy.strategist][_pair.token0] += split0.strategistAmount;
         rewards[_strategy.strategist][_pair.token1] += split1.strategistAmount;
@@ -287,7 +281,10 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             FeeReceiver.TREASURY
         );
 
-        return (split0.userAmount, split1.userAmount);
+        return PairAmounts({
+            amount0: split0.userAmount,
+            amount1: split1.userAmount
+        });
     }
 
     function _calculateLiquidityRewardSplits(
