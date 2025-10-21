@@ -38,14 +38,18 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint16 performanceFeeBps;
     }
 
-    struct Position {
+    struct DexPosition {
         INonfungiblePositionManager positionManager;
         uint tokenId;
         uint128 liquidity;
         IERC20 token0; // TODO gasopt: check if saving tokens will save gas on withdrawal
         IERC20 token1;
+    }
+
+    struct Position {
         StrategyIdentifier strategy;
         uint16 performanceFeeBps;
+        DexPosition[] dexPositions;
     }
 
     struct Pair {
@@ -65,8 +69,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     }
 
     /// @notice Links a liquidity module position to multiple liquidity positions in decentralized exchanges
-    /// @dev modulePositionId => Position[]
-    mapping(uint => Position[]) public _positions;
+    Position[] public _positions;
 
     /// @notice user => token => rewards
     mapping(address => mapping(IERC20 => uint)) public rewards;
@@ -115,6 +118,10 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
+        Position storage position = _positions[_positionId];
+
+        position.strategy = params.strategy;
+        position.performanceFeeBps = params.performanceFeeBps;
 
         uint amount = _pullToken(params.inputToken, params.inputAmount);
 
@@ -156,49 +163,48 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 })
             );
 
-            _positions[_positionId][i] = Position({
+            position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
                 tokenId: tokenId,
                 liquidity: liquidity,
                 token0: investment.token0,
-                token1: investment.token1,
-                strategy: params.strategy,
-                performanceFeeBps: params.performanceFeeBps
-            });
+                token1: investment.token1
+            }));
         }
     }
 
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
-        Position[] memory positions = _positions[_positionId];
-        PairAmounts[] memory withdrawnAmounts = new PairAmounts[](positions.length);
+        Position memory position = _positions[_positionId];
+        DexPosition[] memory dexPositions = position.dexPositions;
+        PairAmounts[] memory withdrawnAmounts = new PairAmounts[](dexPositions.length);
         PairAmounts[] memory minOutputs = abi.decode(_data, (PairAmounts[]));
 
-        for (uint index; index < positions.length; ++index) {
-            Position memory position = positions[index];
-            Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
+        for (uint index; index < dexPositions.length; ++index) {
+            DexPosition memory dexPosition = dexPositions[index];
+            Pair memory pair = _getPairFromLP(dexPosition.positionManager, dexPosition.tokenId);
             PairAmounts memory minOutput = minOutputs.length > index
                 ? minOutputs[index]
                 : PairAmounts(0, 0);
 
             PairAmounts memory userRewards = _distributeLiquidityRewards(
                 pair,
-                _claimLiquidityPositionTokens(position, pair),
+                _claimLiquidityPositionTokens(dexPosition, pair),
                 position.strategy,
                 [_positionId, index],
                 position.performanceFeeBps
             );
 
-            position.positionManager.decreaseLiquidity(
+            dexPosition.positionManager.decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
-                    tokenId: position.tokenId,
-                    liquidity: position.liquidity,
+                    tokenId: dexPosition.tokenId,
+                    liquidity: dexPosition.liquidity,
                     amount0Min: minOutput.amount0,
                     amount1Min: minOutput.amount1,
                     deadline: block.timestamp
                 })
             );
 
-            PairAmounts memory balances = _claimLiquidityPositionTokens(position, pair);
+            PairAmounts memory balances = _claimLiquidityPositionTokens(dexPosition, pair);
 
             PairAmounts memory transferAmounts = PairAmounts({
                 amount0: balances.amount0 + userRewards.amount0,
@@ -215,7 +221,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     }
 
     function _claimLiquidityPositionTokens(
-        Position memory _position,
+        DexPosition memory _position,
         Pair memory _pair
     ) internal returns (PairAmounts memory amounts) {
         uint initialBalance0 = _pair.token0.balanceOf(address(this));
