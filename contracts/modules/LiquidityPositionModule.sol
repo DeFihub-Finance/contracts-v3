@@ -35,7 +35,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint inputAmount;
         Investment[] investments;
         StrategyIdentifier strategy;
-        uint16 feeOnRewardsBps;
+        uint16 performanceFeeBps;
     }
 
     struct Position {
@@ -45,7 +45,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         IERC20 token0; // TODO gasopt: check if saving tokens will save gas on withdrawal
         IERC20 token1;
         StrategyIdentifier strategy;
-        uint16 feeOnRewardsBps;
+        uint16 performanceFeeBps;
     }
 
     struct Pair {
@@ -163,7 +163,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 token0: investment.token0,
                 token1: investment.token1,
                 strategy: params.strategy,
-                feeOnRewardsBps: params.feeOnRewardsBps
+                performanceFeeBps: params.performanceFeeBps
             });
         }
     }
@@ -185,7 +185,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 _claimLiquidityPositionTokens(position, pair),
                 position.strategy,
                 [_positionId, index],
-                position.feeOnRewardsBps
+                position.performanceFeeBps
             );
 
             position.positionManager.decreaseLiquidity(
@@ -244,13 +244,13 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         PairAmounts memory _amounts,
         StrategyIdentifier memory _strategy,
         uint[2] memory _positionId,
-        uint16 _feeOnRewardsBps
+        uint16 _performanceFeeBps
     ) internal returns (PairAmounts memory amounts) {
-        if (_feeOnRewardsBps == 0)
+        if (_performanceFeeBps == 0)
             return _amounts;
 
-        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amounts.amount0, _feeOnRewardsBps);
-        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amounts.amount1, _feeOnRewardsBps);
+        RewardSplit memory split0 = _calculateLiquidityRewardSplits(_amounts.amount0, _performanceFeeBps);
+        RewardSplit memory split1 = _calculateLiquidityRewardSplits(_amounts.amount1, _performanceFeeBps);
 
         rewards[_strategy.strategist][_pair.token0] += split0.strategistAmount;
         rewards[_strategy.strategist][_pair.token1] += split1.strategistAmount;
