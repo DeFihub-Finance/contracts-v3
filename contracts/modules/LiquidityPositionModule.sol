@@ -73,7 +73,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
     uint16 internal _strategistFeeSharingBps;
 
-    event Fee(
+    event FeeDistributed(
         address from,
         address to,
         uint[2] positionId, // [0]: modulePositionId, [1]: Position index
@@ -259,7 +259,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         rewards[_getTreasury()][_pair.token0] += split0.treasuryAmount;
         rewards[_getTreasury()][_pair.token1] += split1.treasuryAmount;
 
-        emit Fee(
+        emit FeeDistributed(
             msg.sender,
             _strategy.strategist,
             _positionId,
@@ -270,7 +270,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             FeeReceiver.STRATEGIST
         );
 
-        emit Fee(
+        emit FeeDistributed(
             msg.sender,
             _getTreasury(),
             _positionId,
