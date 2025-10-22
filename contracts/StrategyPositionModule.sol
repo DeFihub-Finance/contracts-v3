@@ -108,12 +108,13 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     // TODO add invest with permit and invest native
 
+    // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
         uint _strategyPositionId,
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
-        uint16 totalPercentage;
+        uint16 totalAllocationBps;
 
         _setReferrer(params.referrer);
 
@@ -126,7 +127,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentage += investment.allocationBps;
+            totalAllocationBps += investment.allocationBps;
 
             params.inputToken.safeIncreaseAllowance(
                 investment.module,
@@ -135,13 +136,13 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
-            _positions[_strategyPositionId][i] = StrategyPosition({
+            _positions[_strategyPositionId].push(StrategyPosition({
                 moduleAddress: investment.module,
                 modulePositionId: modulePositionId
-            });
+            }));
         }
 
-        if (totalPercentage != 100)
+        if (totalAllocationBps != 1e4)
             revert InvalidTotalPercentage();
     }
 

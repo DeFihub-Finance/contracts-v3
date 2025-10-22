@@ -123,13 +123,17 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         position.strategy = params.strategy;
         position.performanceFeeBps = params.performanceFeeBps;
 
-        uint amount = _pullToken(params.inputToken, params.inputAmount);
+        uint remainingAmount = _pullToken(params.inputToken, params.inputAmount);
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            if (amount < (investment.swapAmount0 + investment.swapAmount1))
+            uint required = investment.swapAmount0 + investment.swapAmount1;
+
+            if (remainingAmount < required)
                 revert SwapAmountExceedsBalance();
+
+            remainingAmount -= required;
 
             uint inputAmount0 = HubRouter.execute(
                 investment.swap0,

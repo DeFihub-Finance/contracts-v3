@@ -20,7 +20,7 @@ abstract contract UseTreasury is Ownable {
     }
 
     function _setTreasury(address _newTreasury) internal {
-        if (_treasury == address(0))
+        if (_newTreasury == address(0))
             revert InvalidZeroAddress();
 
         _treasury = _newTreasury;
