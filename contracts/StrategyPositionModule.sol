@@ -143,7 +143,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         }
 
         if (totalAllocationBps != 1e4)
-             revert InvalidTotalPercentage();
+            revert InvalidTotalPercentage();
     }
 
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
