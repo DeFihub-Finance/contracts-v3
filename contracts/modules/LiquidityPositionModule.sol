@@ -79,13 +79,15 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     event FeeDistributed(
         address from,
         address to,
-        uint[2] positionId, // [0]: modulePositionId, [1]: Position index
+        uint positionId,
+        uint positionIndex,
         IERC20 token0,
         IERC20 token1,
         uint amount0,
         uint amount1,
         FeeReceiver receiver
     );
+    event PositionCollected(address owner, address beneficiary, uint positionId, PairAmounts[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint positionId, PairAmounts[] withdrawnAmounts);
     event FeeSharingUpdated(uint16 strategistFeeSharingBps);
 
@@ -177,24 +179,52 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         }
     }
 
+    function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
+        Position memory position = _positions[_positionId];
+        DexPosition[] memory dexPositions = position.dexPositions;
+        PairAmounts[] memory withdrawnAmounts = new PairAmounts[](dexPositions.length);
+
+        for (uint i; i < dexPositions.length; ++i) {
+            DexPosition memory dexPosition = dexPositions[i];
+            Pair memory pair = _getPairFromLP(dexPosition.positionManager, dexPosition.tokenId);
+
+            PairAmounts memory userRewards = _distributeLiquidityRewards(
+                pair,
+                _claimLiquidityPositionTokens(dexPosition, pair),
+                position.strategy, // TODO gasopt: test gas cost of passing the entire position as a single argument
+                _positionId,
+                i,
+                position.performanceFeeBps
+            );
+
+            pair.token0.safeTransfer(msg.sender, userRewards.amount0);
+            pair.token1.safeTransfer(msg.sender, userRewards.amount1);
+
+            withdrawnAmounts[i] = userRewards;
+        }
+
+        emit PositionCollected(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
+    }
+
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
         Position memory position = _positions[_positionId];
         DexPosition[] memory dexPositions = position.dexPositions;
         PairAmounts[] memory withdrawnAmounts = new PairAmounts[](dexPositions.length);
         PairAmounts[] memory minOutputs = abi.decode(_data, (PairAmounts[]));
 
-        for (uint index; index < dexPositions.length; ++index) {
-            DexPosition memory dexPosition = dexPositions[index];
+        for (uint i; i < dexPositions.length; ++i) {
+            DexPosition memory dexPosition = dexPositions[i];
             Pair memory pair = _getPairFromLP(dexPosition.positionManager, dexPosition.tokenId);
-            PairAmounts memory minOutput = minOutputs.length > index
-                ? minOutputs[index]
+            PairAmounts memory minOutput = minOutputs.length > i
+                ? minOutputs[i]
                 : PairAmounts(0, 0);
 
             PairAmounts memory userRewards = _distributeLiquidityRewards(
                 pair,
                 _claimLiquidityPositionTokens(dexPosition, pair),
                 position.strategy,
-                [_positionId, index],
+                _positionId,
+                i,
                 position.performanceFeeBps
             );
 
@@ -218,7 +248,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             pair.token0.safeTransfer(_beneficiary, transferAmounts.amount0);
             pair.token1.safeTransfer(_beneficiary, transferAmounts.amount1);
 
-            withdrawnAmounts[index] = transferAmounts;
+            withdrawnAmounts[i] = transferAmounts;
         }
 
         emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
@@ -253,7 +283,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         Pair memory _pair,
         PairAmounts memory _amounts,
         StrategyIdentifier memory _strategy,
-        uint[2] memory _positionId,
+        uint _positionId,
+        uint _positionIndex,
         uint16 _performanceFeeBps
     ) internal returns (PairAmounts memory amounts) {
         if (_performanceFeeBps == 0)
@@ -273,6 +304,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             msg.sender,
             _strategy.strategist,
             _positionId,
+            _positionIndex,
             _pair.token0,
             _pair.token1,
             split0.strategistAmount,
@@ -284,6 +316,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             msg.sender,
             _getTreasury(),
             _positionId,
+            _positionIndex,
             _pair.token0,
             _pair.token1,
             split0.treasuryAmount,

@@ -146,6 +146,16 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             revert InvalidTotalPercentage();
     }
 
+    function _collectPosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
+        bytes[] memory data = abi.decode(_data, (bytes[]));
+
+        for (uint i; i < _positions[_positionId].length; ++i) {
+            StrategyPosition memory position = _positions[_positionId][i];
+
+            BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.modulePositionId, data[i]);
+        }
+    }
+
     function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
