@@ -114,7 +114,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
-        uint16 totalPercentageBps;
+        uint16 totalAllocationBps;
 
         _setReferrer(params.referrer);
 
@@ -127,7 +127,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentageBps += investment.allocationBps;
+            totalAllocationBps += investment.allocationBps;
 
             params.inputToken.safeIncreaseAllowance(
                 investment.module,
@@ -142,8 +142,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             }));
         }
 
-        if (totalPercentageBps != 1e4)
-             revert InvalidTotalPercentage();
+        if (totalAllocationBps != 1e4)
+            revert InvalidTotalPercentage();
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
