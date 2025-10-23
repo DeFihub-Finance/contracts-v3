@@ -182,8 +182,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         Position[] memory positions = _positions[_positionId];
         uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
 
-        for (uint index; index < positions.length; ++index) {
-            Position memory position = positions[index];
+        for (uint i; i < positions.length; ++i) {
+            Position memory position = positions[i];
             Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
 
             (uint rewards0, uint rewards1) = _claimLiquidityPositionTokens(position, pair);
@@ -193,14 +193,14 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 rewards0,
                 rewards1,
                 position.strategy, // TODO gasopt: test gas cost of passing the entire position as a single argument
-                [_positionId, index],
+                [_positionId, i],
                 position.feeOnRewardsBps
             );
 
             pair.token0.safeTransfer(msg.sender, userRewards0);
             pair.token1.safeTransfer(msg.sender, userRewards1);
 
-            withdrawnAmounts[index] = [userRewards0, userRewards1];
+            withdrawnAmounts[i] = [userRewards0, userRewards1];
         }
 
         emit PositionCollected(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
@@ -211,11 +211,11 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         Position[] memory positions = _positions[_positionId];
         uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
 
-        for (uint index; index < positions.length; ++index) {
-            Position memory position = positions[index];
+        for (uint i; i < positions.length; ++i) {
+            Position memory position = positions[i];
             Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
-            MinOutputs memory minOutput = minOutputs.length > index
-                ? minOutputs[index]
+            MinOutputs memory minOutput = minOutputs.length > i
+                ? minOutputs[i]
                 : MinOutputs(0, 0);
 
             // Claim must be called before decreasing liquidity to subtract fees only from rewards
@@ -226,7 +226,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 rewards0,
                 rewards1,
                 position.strategy,
-                [_positionId, index],
+                [_positionId, i],
                 position.feeOnRewardsBps
             );
 
@@ -248,7 +248,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             pair.token0.safeTransfer(_beneficiary, transferAmount0);
             pair.token1.safeTransfer(_beneficiary, transferAmount1);
 
-            withdrawnAmounts[index] = [transferAmount0, transferAmount1];
+            withdrawnAmounts[i] = [transferAmount0, transferAmount1];
         }
 
         emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
