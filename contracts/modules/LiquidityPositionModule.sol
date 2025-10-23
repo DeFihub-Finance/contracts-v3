@@ -81,7 +81,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     event Fee(
         address from,
         address to,
-        uint[2] positionId, // [0]: modulePositionId, [1]: Position index
+        uint positionId,
+        uint positionIndex,
         IERC20 token0,
         IERC20 token1,
         uint amount0,
@@ -193,7 +194,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 rewards0,
                 rewards1,
                 position.strategy, // TODO gasopt: test gas cost of passing the entire position as a single argument
-                [_positionId, i],
+                _positionId,
+                i,
                 position.feeOnRewardsBps
             );
 
@@ -226,7 +228,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 rewards0,
                 rewards1,
                 position.strategy,
-                [_positionId, i],
+                _positionId,
+                i,
                 position.feeOnRewardsBps
             );
 
@@ -282,7 +285,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint _amount0,
         uint _amount1,
         StrategyIdentifier memory _strategy,
-        uint[2] memory _positionId,
+        uint _positionId,
+        uint _positionIndex,
         uint16 _feeOnRewardsBps
     ) internal returns (uint userAmount0, uint userAmount1) {
         if (_feeOnRewardsBps == 0)
@@ -302,6 +306,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             msg.sender,
             _strategy.strategist,
             _positionId,
+            _positionIndex,
             _pair.token0,
             _pair.token1,
             split0.strategistAmount,
@@ -313,6 +318,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
             msg.sender,
             _getTreasury(),
             _positionId,
+            _positionIndex,
             _pair.token0,
             _pair.token1,
             split0.treasuryAmount,
