@@ -30,7 +30,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         uint amount;
     }
 
-    mapping(uint => Position[]) internal _positions;
+    Position[][] internal _positions;
     mapping(uint => bool) internal _closedPositions;
 
     event PositionClosed(address owner, address beneficiary, uint positionId, uint[] withdrawnAmounts);
