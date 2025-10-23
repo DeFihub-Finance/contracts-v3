@@ -26,6 +26,13 @@ abstract contract BasePositionModule is ERC721 {
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
+    modifier onlyPositionOwner(uint _positionId) {
+        if (msg.sender != _ownerOf(_positionId))
+            revert Unauthorized();
+
+        _;
+    }
+
     function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
         positionId = _mintPositionNFT();
 
@@ -38,20 +45,22 @@ abstract contract BasePositionModule is ERC721 {
     /// @param 1: encodedInvestments
     function _createPosition(uint, bytes memory) internal virtual;
 
-    function collectPosition(address _beneficiary, uint _positionId, bytes memory _data) external {
-        if (msg.sender != _ownerOf(_positionId))
-            revert Unauthorized();
-
+    function collectPosition(
+        address _beneficiary,
+        uint _positionId,
+        bytes memory _data
+    ) external onlyPositionOwner(_positionId) {
         _collectPosition(_beneficiary, _positionId, _data);
     }
 
     function _collectPosition(address, uint, bytes memory) internal virtual;
 
     // maybe call close position or burn
-    function closePosition(address _beneficiary, uint _positionId, bytes memory _data) external {
-        if (msg.sender != _ownerOf(_positionId))
-            revert Unauthorized();
-
+    function closePosition(
+        address _beneficiary,
+        uint _positionId,
+        bytes memory _data
+    ) external onlyPositionOwner(_positionId) {
         _burn(_positionId);
 
         _closePosition(_beneficiary, _positionId, _data);
