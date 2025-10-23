@@ -180,29 +180,27 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-        Position[] memory positions = _positions[_positionId];
-        uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
+        Position memory position = _positions[_positionId];
+        DexPosition[] memory dexPositions = position.dexPositions;
+        PairAmounts[] memory withdrawnAmounts = new PairAmounts[](dexPositions.length);
 
-        for (uint i; i < positions.length; ++i) {
-            Position memory position = positions[i];
-            Pair memory pair = _getPairFromLP(position.positionManager, position.tokenId);
+        for (uint i; i < dexPositions.length; ++i) {
+            DexPosition memory dexPosition = dexPositions[i];
+            Pair memory pair = _getPairFromLP(dexPosition.positionManager, dexPosition.tokenId);
 
-            (uint rewards0, uint rewards1) = _claimLiquidityPositionTokens(position, pair);
-
-            (uint userRewards0, uint userRewards1) = _distributeLiquidityRewards(
+            PairAmounts memory userRewards = _distributeLiquidityRewards(
                 pair,
-                rewards0,
-                rewards1,
+                _claimLiquidityPositionTokens(dexPosition, pair),
                 position.strategy, // TODO gasopt: test gas cost of passing the entire position as a single argument
                 _positionId,
                 i,
-                position.feeOnRewardsBps
+                position.performanceFeeBps
             );
 
-            pair.token0.safeTransfer(msg.sender, userRewards0);
-            pair.token1.safeTransfer(msg.sender, userRewards1);
+            pair.token0.safeTransfer(msg.sender, userRewards.amount0);
+            pair.token1.safeTransfer(msg.sender, userRewards.amount1);
 
-            withdrawnAmounts[i] = [userRewards0, userRewards1];
+            withdrawnAmounts[i] = userRewards;
         }
 
         emit PositionCollected(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
