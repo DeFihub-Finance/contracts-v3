@@ -34,7 +34,11 @@ abstract contract BasePositionModule is ERC721 {
     }
 
     function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
-        positionId = _mintPositionNFT();
+        positionId = _nextPositionId;
+
+        _nextPositionId++;
+
+        _safeMint(msg.sender, positionId);
 
         _createPosition(positionId, _encodedInvestments);
 
@@ -70,14 +74,6 @@ abstract contract BasePositionModule is ERC721 {
     /// @param 1: positionId
     /// @param 2: encodedData
     function _closePosition(address, uint, bytes memory) internal virtual;
-
-    function _mintPositionNFT() internal returns (uint positionId) {
-        positionId = _nextPositionId;
-
-        _nextPositionId++;
-
-        _safeMint(msg.sender, positionId);
-    }
 
     function _pullToken(
         IERC20 _token,
