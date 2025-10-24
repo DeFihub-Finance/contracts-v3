@@ -30,7 +30,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         uint amount;
     }
 
-    Position[][] internal _positions;
+    mapping(uint => Position[]) internal _positions;
     mapping(uint => bool) internal _closedPositions;
 
     event PositionClosed(address owner, address beneficiary, uint positionId, uint[] withdrawnAmounts);
@@ -55,17 +55,15 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
 
             usedAllocationBps += investment.allocationBps;
 
-            _positions[_positionId].push(
-                Position({
-                    token: investment.token,
-                    amount: HubRouter.execute(
-                        investment.swap,
-                        params.inputToken,
-                        investment.token,
-                        totalAmount * investment.allocationBps / 1e4
-                    )
-                })
-            );
+            _positions[_positionId][i] = Position({
+                token: investment.token,
+                amount: HubRouter.execute(
+                    investment.swap,
+                    params.inputToken,
+                    investment.token,
+                    investment.allocatedAmount
+                )
+            });
         }
 
         if (usedAllocationBps != 1e4)
