@@ -10,6 +10,8 @@
     "@nomicfoundation/hardhat-ignition": "^3.0.3",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@types/node": "^22.18.8",
+    "@uniswap/universal-router": "^2.0.0",
+    "@uniswap/v3-core": "^1.0.1",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.0.7",
     "typescript": "^5.9.3",
