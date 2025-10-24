@@ -125,17 +125,13 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         position.strategy = params.strategy;
         position.performanceFeeBps = params.performanceFeeBps;
 
-        uint remainingAmount = _pullToken(params.inputToken, params.inputAmount);
+        uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
+        uint totalAllocatedAmount;
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            uint required = investment.swapAmount0 + investment.swapAmount1;
-
-            if (remainingAmount < required)
-                revert SwapAmountExceedsBalance();
-
-            remainingAmount -= required;
+            totalAllocatedAmount += investment.swapAmount0 + investment.swapAmount1;
 
             uint inputAmount0 = HubRouter.execute(
                 investment.swap0,
@@ -177,6 +173,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
                 token1: investment.token1
             }));
         }
+
+        _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {

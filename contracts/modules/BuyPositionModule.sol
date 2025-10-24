@@ -15,7 +15,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         bytes swap;
         // TODO gasopt: test if cheaper extracting token from swap string instead of passing as argument
         IERC20 token;
-        uint16 allocationBps;
+        uint allocatedAmount;
     }
 
     struct InvestParams {
@@ -48,12 +48,12 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
         uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
-        uint16 usedAllocationBps;
+        uint totalAllocatedAmount;
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            usedAllocationBps += investment.allocationBps;
+            totalAllocatedAmount += investment.allocatedAmount;
 
             _positions[_positionId][i] = Position({
                 token: investment.token,
@@ -66,8 +66,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
             });
         }
 
-        if (usedAllocationBps != 1e4)
-            revert InvalidBasisPoints();
+        _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
