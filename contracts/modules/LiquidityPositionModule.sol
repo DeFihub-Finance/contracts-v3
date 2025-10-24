@@ -69,7 +69,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
     }
 
     /// @notice Links a liquidity module position to multiple liquidity positions in decentralized exchanges
-    Position[] public _positions;
+    mapping(uint => Position) public _positions;
 
     /// @notice user => token => rewards
     mapping(address => mapping(IERC20 => uint)) public rewards;
