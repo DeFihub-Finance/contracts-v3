@@ -20,9 +20,12 @@ abstract contract BasePositionModule is ERC721 {
         TREASURY
     }
 
+    uint constant internal MAX_ROUNDING_TOLERANCE_BPS = 2; // 0.02%
+
     uint internal _nextPositionId;
 
     error Unauthorized();
+    error InvalidAllocatedAmount();
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
@@ -84,5 +87,12 @@ abstract contract BasePositionModule is ERC721 {
         _token.safeTransferFrom(msg.sender, address(this), _inputAmount);
 
         return _token.balanceOf(address(this)) - initialBalance;
+    }
+
+    function _validateAllocatedAmount(uint _allocatedAmount, uint _receivedAmount) internal pure {
+        uint min = _receivedAmount - (_receivedAmount * MAX_ROUNDING_TOLERANCE_BPS / 1e4);
+
+        if (_allocatedAmount > _receivedAmount || _allocatedAmount < min)
+            revert InvalidAllocatedAmount();
     }
 }
