@@ -25,7 +25,7 @@ abstract contract BasePositionModule is ERC721 {
     uint internal _nextPositionId;
 
     error Unauthorized();
-    error AmountExceedsDeposit();
+    error InvalidAllocatedAmount();
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
@@ -93,6 +93,6 @@ abstract contract BasePositionModule is ERC721 {
         uint min = _receivedAmount - (_receivedAmount * MAX_ROUNDING_TOLERANCE_BPS / 1e4);
 
         if (_allocatedAmount > _receivedAmount || _allocatedAmount < min)
-            revert AmountExceedsDeposit();
+            revert InvalidAllocatedAmount();
     }
 }
