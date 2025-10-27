@@ -55,7 +55,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            _positions[_positionId][i] = Position({
+            _positions[_positionId].push(Position({
                 token: investment.token,
                 amount: HubRouter.execute(
                     investment.swap,
@@ -63,7 +63,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
                     investment.token,
                     investment.allocatedAmount
                 )
-            });
+            }));
         }
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
