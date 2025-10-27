@@ -10,7 +10,7 @@ import {RouterParameters} from "@uniswap/universal-router/contracts/types/Router
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 
 import {Constants} from "./Constants.sol";
-import {TestWETH9} from "../../contracts/test/TestWETH9.sol";
+import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
 import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
@@ -25,7 +25,7 @@ contract Deployers is Test {
     address public immutable account2 = makeAddr("ACCOUNT2");
 
     // Tokens
-    TestWETH9 public weth;
+    TestWETH public weth;
     TestERC20 public usdt;
     TestERC20 public wbtc;
 
@@ -42,7 +42,7 @@ contract Deployers is Test {
 
     /// @notice Deploys test tokens
     function deployTokens() internal {
-        weth = new TestWETH9();
+        weth = new TestWETH();
         wbtc = new TestERC20(8);
         usdt = new TestERC20(18);
     }
