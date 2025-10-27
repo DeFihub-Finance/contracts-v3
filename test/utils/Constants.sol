@@ -4,10 +4,9 @@ pragma solidity 0.8.30;
 library Constants {
     address public constant ZERO_ADDRESS = address(0);
 
-    // Official uni hash for V2
-    bytes32 public constant PAIR_INIT_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
     // Official uni hash for V3
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 public constant ZERO_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
     // Pool fees
     uint24 public constant FEE_LOW = 500;

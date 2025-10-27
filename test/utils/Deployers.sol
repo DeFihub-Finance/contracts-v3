@@ -107,7 +107,7 @@ contract Deployers is Test {
                         permit2: Constants.ZERO_ADDRESS,
                         // v2
                         v2Factory: Constants.ZERO_ADDRESS,
-                        pairInitCodeHash: Constants.PAIR_INIT_CODE_HASH,
+                        pairInitCodeHash: Constants.ZERO_HASH,
                         // v3
                         v3Factory: address(factoryUniV3),
                         v3NFTPositionManager: address(positionManagerUniV3),
