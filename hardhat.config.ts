@@ -25,6 +25,13 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  test: {
+    solidity: {
+      fsPermissions: {
+        readDirectory: ["node_modules/@uniswap"]
+      },
+    },
+  },
   networks: {
     hardhatMainnet: {
       type: "edr-simulated",
