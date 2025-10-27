@@ -20,14 +20,28 @@ abstract contract BasePositionModule is ERC721 {
         TREASURY
     }
 
+    uint constant internal MAX_ROUNDING_TOLERANCE_BPS = 2; // 0.02%
+
     uint internal _nextPositionId;
 
     error Unauthorized();
+    error InvalidAllocatedAmount();
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
+    modifier onlyPositionOwner(uint _positionId) {
+        if (msg.sender != _ownerOf(_positionId))
+            revert Unauthorized();
+
+        _;
+    }
+
     function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
-        positionId = _mintPositionNFT();
+        positionId = _nextPositionId;
+
+        _nextPositionId++;
+
+        _safeMint(msg.sender, positionId);
 
         _createPosition(positionId, _encodedInvestments);
 
@@ -38,20 +52,22 @@ abstract contract BasePositionModule is ERC721 {
     /// @param 1: encodedInvestments
     function _createPosition(uint, bytes memory) internal virtual;
 
-    function collectPosition(address _beneficiary, uint _positionId, bytes memory _data) external {
-        if (msg.sender != _ownerOf(_positionId))
-            revert Unauthorized();
-
+    function collectPosition(
+        address _beneficiary,
+        uint _positionId,
+        bytes memory _data
+    ) external onlyPositionOwner(_positionId) {
         _collectPosition(_beneficiary, _positionId, _data);
     }
 
     function _collectPosition(address, uint, bytes memory) internal virtual;
 
     // maybe call close position or burn
-    function closePosition(address _beneficiary, uint _positionId, bytes memory _data) external {
-        if (msg.sender != _ownerOf(_positionId))
-            revert Unauthorized();
-
+    function closePosition(
+        address _beneficiary,
+        uint _positionId,
+        bytes memory _data
+    ) external onlyPositionOwner(_positionId) {
         _burn(_positionId);
 
         _closePosition(_beneficiary, _positionId, _data);
@@ -62,14 +78,6 @@ abstract contract BasePositionModule is ERC721 {
     /// @param 2: encodedData
     function _closePosition(address, uint, bytes memory) internal virtual;
 
-    function _mintPositionNFT() internal returns (uint positionId) {
-        positionId = _nextPositionId;
-
-        _nextPositionId++;
-
-        _safeMint(msg.sender, positionId);
-    }
-
     function _pullToken(
         IERC20 _token,
         uint _inputAmount
@@ -79,5 +87,12 @@ abstract contract BasePositionModule is ERC721 {
         _token.safeTransferFrom(msg.sender, address(this), _inputAmount);
 
         return _token.balanceOf(address(this)) - initialBalance;
+    }
+
+    function _validateAllocatedAmount(uint _allocatedAmount, uint _receivedAmount) internal pure {
+        uint min = _receivedAmount - (_receivedAmount * MAX_ROUNDING_TOLERANCE_BPS / 1e4);
+
+        if (_allocatedAmount > _receivedAmount || _allocatedAmount < min)
+            revert InvalidAllocatedAmount();
     }
 }

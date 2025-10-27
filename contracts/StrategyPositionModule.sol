@@ -12,10 +12,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     using SafeERC20 for IERC20;
 
     struct Investment {
-        // Represents the portion of the deposited balance allocated for this specific investment module.
-        uint16 allocationBps;
         // Where to invest the allocated funds
         address module;
+        // The portion of the deposited balance allocated for this specific investment module
+        uint allocatedAmount;
         // Encoded data specific to the investment module
         bytes encodedParams;
     }
@@ -62,7 +62,6 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
     error InvalidInput();
-    error InvalidTotalPercentage();
 
     constructor(
         address _owner,
@@ -118,25 +117,22 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
-        uint16 totalPercentageBps;
 
         _setReferrer(params.referrer);
 
-        uint amount = _collectFees(
+        uint totalAmount = _collectFees(
             params.inputToken,
             _pullToken(params.inputToken, params.inputAmount),
             params.strategyIdentifier
         );
+        uint totalAllocatedAmount;
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
-            totalPercentageBps += investment.allocationBps;
+            totalAllocatedAmount += investment.allocatedAmount;
 
-            params.inputToken.safeIncreaseAllowance(
-                investment.module,
-                (amount * investment.allocationBps) / 1e4
-            );
+            params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
 
             uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
@@ -146,8 +142,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             }));
         }
 
-        if (totalPercentageBps != 1e4)
-             revert InvalidTotalPercentage();
+        _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
 
     function _collectPosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
