@@ -40,6 +40,12 @@ contract Deployers is Test {
     IUniswapV3Factory public factoryUniV3;
     INonfungiblePositionManager public positionManagerUniV3;
 
+    function deployBaseContracts() public {
+        deployTokens();
+        deployUniV3();
+        deployHubModules();
+    }
+
     /// @notice Deploys test tokens
     function deployTokens() internal {
         weth = new TestWETH();
