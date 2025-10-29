@@ -59,7 +59,7 @@ contract Deployers is Test {
             feeBps,
             strategistFeeSharingBps,
             referrerFeeSharingBps,
-            86400 // 24 hours of referral duration
+            24 hours // Referral duration
         );
 
         liquidityPositionModule = new LiquidityPositionModule(
