@@ -48,7 +48,7 @@ contract Deployers is Test {
     }
 
     /// @notice Deploys DeFihub modules
-    function deployModules() internal {
+    function deployHubModules() internal {
         uint16 feeBps = 10; // 0.1%
         uint16 referrerFeeSharingBps = 2500; // 25%
         uint16 strategistFeeSharingBps = 2500; // 25%
