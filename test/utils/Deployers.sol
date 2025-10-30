@@ -40,6 +40,11 @@ contract Deployers is Test {
     IUniswapV3Factory public factoryUniV3;
     INonfungiblePositionManager public positionManagerUniV3;
 
+    // Fees
+    uint16 public immutable feeBps = 10; // 0.1%
+    uint16 public immutable referrerFeeSharingBps = 2_500; // 25%
+    uint16 public immutable strategistFeeSharingBps = 2_500; // 25%
+
     function deployBaseContracts() public {
         deployTokens();
         deployUniV3();
@@ -55,10 +60,6 @@ contract Deployers is Test {
 
     /// @notice Deploys DeFihub modules
     function deployHubModules() internal {
-        uint16 feeBps = 10; // 0.1%
-        uint16 referrerFeeSharingBps = 2500; // 25%
-        uint16 strategistFeeSharingBps = 2500; // 25%
-
         strategyPositionModule = new StrategyPositionModule(
             owner,
             treasury,
