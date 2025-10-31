@@ -22,8 +22,8 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         uint24 fee;
         int24 tickLower;
         int24 tickUpper;
-        bytes swap0;
-        bytes swap1;
+        HubRouter.HubSwap swap0;
+        HubRouter.HubSwap swap1;
         uint swapAmount0;
         uint swapAmount1;
         uint minAmount0;
