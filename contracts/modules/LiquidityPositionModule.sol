@@ -16,7 +16,6 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
     struct Investment {
         INonfungiblePositionManager positionManager;
-        IERC20 inputToken;
         IERC20 token0;
         IERC20 token1;
         uint24 fee;
@@ -139,13 +138,13 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
             uint inputAmount0 = HubRouter.execute(
                 investment.swap0,
-                investment.inputToken,
+                params.inputToken,
                 investment.token0,
                 investment.swapAmount0
             );
             uint inputAmount1 = HubRouter.execute(
                 investment.swap1,
-                investment.inputToken,
+                params.inputToken,
                 investment.token1,
                 investment.swapAmount1
             );
