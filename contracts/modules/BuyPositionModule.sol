@@ -12,7 +12,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
     using SafeERC20 for IERC20;
 
     struct Investment {
-        bytes swap;
+        HubRouter.HubSwap swap;
         // TODO gasopt: test if cheaper extracting token from swap string instead of passing as argument
         IERC20 token;
         uint allocatedAmount;
