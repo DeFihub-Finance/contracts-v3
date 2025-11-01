@@ -7,14 +7,15 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {RouterParameters} from "@uniswap/universal-router/contracts/types/RouterParameters.sol";
-import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 
 import {Constants} from "./Constants.sol";
 import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
 import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
+import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
+
 
 contract Deployers is Test {
     // Accounts
