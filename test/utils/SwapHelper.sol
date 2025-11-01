@@ -82,15 +82,15 @@ library SwapHelper {
     }
 
     function getMinOutput(
-        uint _amount,
-        IERC20 _inputToken,
-        IERC20 _outputToken,
+        uint amount,
+        IERC20 inputToken,
+        IERC20 outputToken,
         IQuoter quoter,
         uint16 slippageBps
     ) internal returns (uint) {
         uint output = quoter.quoteExactInput(
-            abi.encodePacked(_inputToken, Constants.FEE_MEDIUM, _outputToken),
-            _amount
+            abi.encodePacked(inputToken, Constants.FEE_MEDIUM, outputToken),
+            amount
         );
 
         // Deduct slippage
