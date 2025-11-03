@@ -125,6 +125,11 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         }
     }
 
+    // TODO standardize tokenId or positionId or nftId naming across contracts
+    function getPositions(uint _tokenId) external virtual view returns (Position[] memory) {
+        return _positions[_tokenId];
+    }
+
     function _createPosition(
         uint _positionId,
         bytes memory _encodedInvestments
