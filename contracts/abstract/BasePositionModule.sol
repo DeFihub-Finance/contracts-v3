@@ -22,42 +22,42 @@ abstract contract BasePositionModule is ERC721 {
 
     uint constant internal MAX_ROUNDING_TOLERANCE_BPS = 2; // 0.02%
 
-    uint internal _nextPositionId;
+    uint internal _nextTokenId;
 
     error Unauthorized();
     error InvalidAllocatedAmount();
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
-    modifier onlyPositionOwner(uint _positionId) {
-        if (msg.sender != _ownerOf(_positionId))
+    modifier onlyPositionOwner(uint _tokenId) {
+        if (msg.sender != _ownerOf(_tokenId))
             revert Unauthorized();
 
         _;
     }
 
-    function createPosition(bytes memory _encodedInvestments) external returns (uint positionId) {
-        positionId = _nextPositionId;
+    function createPosition(bytes memory _encodedInvestments) external returns (uint tokenId) {
+        tokenId = _nextTokenId;
 
-        _nextPositionId++;
+        _nextTokenId++;
 
-        _safeMint(msg.sender, positionId);
+        _safeMint(msg.sender, tokenId);
 
-        _createPosition(positionId, _encodedInvestments);
+        _createPosition(tokenId, _encodedInvestments);
 
-        return positionId;
+        return tokenId;
     }
 
-    /// @param 0: positionId
+    /// @param 0: tokenId
     /// @param 1: encodedInvestments
     function _createPosition(uint, bytes memory) internal virtual;
 
     function collectPosition(
         address _beneficiary,
-        uint _positionId,
+        uint _tokenId,
         bytes memory _data
-    ) external onlyPositionOwner(_positionId) {
-        _collectPosition(_beneficiary, _positionId, _data);
+    ) external onlyPositionOwner(_tokenId) {
+        _collectPosition(_beneficiary, _tokenId, _data);
     }
 
     function _collectPosition(address, uint, bytes memory) internal virtual;
@@ -65,16 +65,16 @@ abstract contract BasePositionModule is ERC721 {
     // maybe call close position or burn
     function closePosition(
         address _beneficiary,
-        uint _positionId,
+        uint _tokenId,
         bytes memory _data
-    ) external onlyPositionOwner(_positionId) {
-        _burn(_positionId);
+    ) external onlyPositionOwner(_tokenId) {
+        _burn(_tokenId);
 
-        _closePosition(_beneficiary, _positionId, _data);
+        _closePosition(_beneficiary, _tokenId, _data);
     }
 
     /// @param 0: beneficiary
-    /// @param 1: positionId
+    /// @param 1: tokenId
     /// @param 2: encodedData
     function _closePosition(address, uint, bytes memory) internal virtual;
 
