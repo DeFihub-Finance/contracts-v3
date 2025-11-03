@@ -23,7 +23,7 @@ library HubSwapPlanner {
         bytes memory commands = new bytes(swap.commands.length + 1);
         bytes[] memory inputs = new bytes[](swap.inputs.length + 1);
 
-        for (uint i; i < inputs.length - 1; i++) {
+        for (uint i; i < inputs.length - 1; ++i) {
             // Copy from swap.
             inputs[i] = swap.inputs[i];
             commands[i] = swap.commands[i];
