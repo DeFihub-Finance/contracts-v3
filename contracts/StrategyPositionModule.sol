@@ -184,12 +184,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
-        uint treasuryFee = hasReferrer
-            ? _inputAmount * protocolFeeBps / 1e4
-            : _inputAmount * (protocolFeeBps + referrerFeeBps) / 1e4;
-        rewards[_getTreasury()][_token] += treasuryFee;
-        remainingAmount -= treasuryFee;
-        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, treasuryFee, FeeReceiver.TREASURY);
+        uint protocolFee = (hasReferrer ? protocolFeeBps + referrerFeeBps : protocolFeeBps) * _inputAmount / 1e4;
+        rewards[_getTreasury()][_token] += protocolFee;
+        remainingAmount -= protocolFee;
+        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);
     }
 
     function _setReferrer(address _referrer) internal virtual {
