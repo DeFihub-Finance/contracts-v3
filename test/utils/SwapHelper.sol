@@ -98,6 +98,6 @@ library SwapHelper {
         );
 
         // Deduct slippage
-        return (output * (10_000 - slippageBps)) / 10_000;
+        return output - (output * slippageBps / 1e4);
     }
 }
