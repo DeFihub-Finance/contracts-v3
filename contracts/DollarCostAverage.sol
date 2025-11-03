@@ -59,12 +59,12 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     // @dev inputToken => outputToken => interval => boolean
     mapping(IERC20 => mapping(IERC20 => mapping(uint32 => Pool))) public _pools;
 
-    mapping(uint => Position[]) internal _positions;
+    mapping(uint => Position[]) internal _tokenToPositions;
 
     address public swapper;
 
     event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken, uint32 interval);
-    event PositionCreated(address user, uint poolId, uint positionId, uint swaps, uint amountPerSwap, uint finalSwap);
+    event PositionCreated(address user, uint poolId, uint tokenId, uint swaps, uint amountPerSwap, uint finalSwap);
 //    event Swap(uint poolId, uint amountIn, uint amountOut); // TODO maybe add extra data
     event SwapperUpdated(address swapper);
 
@@ -125,13 +125,12 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         }
     }
 
-    // TODO standardize tokenId or positionId or nftId naming across contracts
     function getPositions(uint _tokenId) external virtual view returns (Position[] memory) {
-        return _positions[_tokenId];
+        return _tokenToPositions[_tokenId];
     }
 
     function _createPosition(
-        uint _positionId,
+        uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
         CreatePositionParams[] memory params = abi.decode(_encodedInvestments, (CreatePositionParams[]));
@@ -146,7 +145,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
                 revert InvalidAmount();
 
             Pool storage pool = _getPool(param.poolId);
-            Position[] storage positions = _positions[_positionId];
+            Position[] storage positions = _tokenToPositions[_tokenId];
 
             uint amountPerSwap = param.amount / param.swaps;
             uint32 finalSwap = pool.performedSwaps + param.swaps;
@@ -168,12 +167,12 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 //        emit PositionCreated(msg.sender, _poolId, positionId, _swaps, amountPerSwap, finalSwap);
     }
 
-    function _closePosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-        Position[] storage positions = _positions[_positionId];
+    function _closePosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
+        Position[] storage positions = _tokenToPositions[_tokenId];
         // TODO emit event with withdrawn amounts
 
         for (uint i; i < positions.length; ++i) {
-            Position storage position = positions[_positionId];
+            Position storage position = positions[_tokenId];
             Pool storage pool = _getPool(position.poolId);
 
             uint inputTokenAmount = _calculateInputTokenBalance(position, pool.performedSwaps);
@@ -197,12 +196,12 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 //        emit PositionClosed(msg.sender, _positionId, inputTokenAmount, outputTokenAmount);
     }
 
-    function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-        Position[] storage positions = _positions[_positionId];
+    function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
+        Position[] storage positions = _tokenToPositions[_tokenId];
         // TODO emit event with withdrawn amounts
 
         for (uint i; i < positions.length; ++i) {
-            Position storage position = positions[_positionId];
+            Position storage position = positions[_tokenId];
             Pool storage pool = _getPool(position.poolId); // TODO gasopt: check if cheaper removing mappings from this struct so it can be memory instead of storage
 
             uint outputTokenAmount = _calculateOutputTokenBalance(position, pool);
