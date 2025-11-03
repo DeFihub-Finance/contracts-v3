@@ -9,69 +9,52 @@ import {IUniversalRouter} from "../interfaces/external/IUniversalRouter.sol";
 library HubRouter {
     using SafeERC20 for IERC20;
 
-    struct SwapData {
+    struct HubSwap {
         IUniversalRouter router;
         bytes commands;
         bytes[] inputs;
     }
 
-    error InvalidSwap();
-
     /**
      * @notice Performs a zap operation using the specified protocol call data.
-     * @param _encodedSwapData - Encoded version of `SwapData`
+     * @param _swap - Data passed to the universal router.
      * @param _inputToken - The ERC20 token to be sold.
      * @param _outputToken - The ERC20 token to be bought.
      * @param _amount - Amount of input tokens to be sold
      * @return outputAmount - The amount of output tokens bought. If no zap is needed, returns the input token amount.
      */
     function execute(
-        bytes memory _encodedSwapData,
+        HubSwap memory _swap,
         IERC20 _inputToken,
         IERC20 _outputToken,
         uint _amount
     ) internal returns (uint outputAmount) {
-        if (_encodedSwapData.length == 0) {
-            if (_inputToken == _outputToken || _amount == 0)
-                return _amount;
-            else
-                revert InvalidSwap();
-        }
+        if (_inputToken == _outputToken || _amount == 0)
+            return _amount;
 
         uint initialOutputBalance = _outputToken.balanceOf(address(this));
 
-        SwapData memory swapData = _decodeSwapData(_encodedSwapData);
+        _inputToken.safeTransfer(address(_swap.router), _amount);
 
-        _inputToken.safeTransfer(address(swapData.router), _amount);
-
-        swapData.router.execute(swapData.commands, swapData.inputs);
+        _swap.router.execute(_swap.commands, _swap.inputs);
 
         return _outputToken.balanceOf(address(this)) - initialOutputBalance;
     }
 
     /**
      * @notice Performs a zap operation using the specified protocol call data.
-     * @param _encodedSwapData - Encoded version of `SwapData`. Must include WRAP_ETH command.
+     * @param _swap - Data passed to the universal router.
      * @param _outputToken - The ERC20 token to be bought.
-     * @return outputAmount - The amount of output tokens bought. If no zap is needed, returns the input token amount.
+     * @return outputAmount - The amount of output tokens bought.
      */
     function executeNative(
-        bytes memory _encodedSwapData,
+        HubSwap memory _swap,
         IERC20 _outputToken
     ) internal returns (uint outputAmount) {
-        if (_encodedSwapData.length == 0)
-            revert InvalidSwap();
-
         uint initialOutputBalance = _outputToken.balanceOf(address(this));
 
-        SwapData memory swapData = _decodeSwapData(_encodedSwapData);
-
-        swapData.router.execute{value: msg.value}(swapData.commands, swapData.inputs);
+        _swap.router.execute{value: msg.value}(_swap.commands, _swap.inputs);
 
         return _outputToken.balanceOf(address(this)) - initialOutputBalance;
-    }
-
-    function _decodeSwapData(bytes memory _encodedSwapData) internal pure returns (SwapData memory) {
-        return abi.decode(_encodedSwapData, (SwapData));
     }
 }
