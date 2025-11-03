@@ -46,7 +46,7 @@ contract Deployers is Test {
     IUniswapV3Pool public wethWbtcPool;
 
     // Fees
-    uint16 public immutable feeBps = 10; // 0.1%
+    uint16 public immutable strategyFeeBps = 10; // 0.1%
     uint16 public immutable referrerFeeSharingBps = 2_500; // 25%
     uint16 public immutable strategistFeeSharingBps = 2_500; // 25%
 
@@ -73,7 +73,7 @@ contract Deployers is Test {
         strategyPositionModule = new StrategyPositionModule(
             owner,
             treasury,
-            feeBps,
+            strategyFeeBps,
             strategistFeeSharingBps,
             referrerFeeSharingBps,
             24 hours // Referral duration
