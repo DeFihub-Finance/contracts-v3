@@ -90,9 +90,8 @@ library UniswapV3Helper {
         TestERC20 tokenA,
         TestERC20 tokenB
     ) internal pure returns (TestERC20 token0, TestERC20 token1) {
-        return
-            address(tokenA) < address(tokenB)
-                ? (tokenA, tokenB)
-                : (tokenB, tokenA);
+        return address(tokenA) < address(tokenB)
+            ? (tokenA, tokenB)
+            : (tokenB, tokenA);
     }
 }
