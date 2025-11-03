@@ -51,13 +51,13 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     mapping(address => mapping(IERC20 => uint)) public rewards;
 
     // settings
-    uint16 public feeBps;
-    uint16 public strategistFeeSharingBps;
-    uint16 public referrerFeeSharingBps;
+    uint16 internal constant MAX_TOTAL_FEE_BPS = 250; // 2.5%
+    uint16 public protocolFeeBps;
+    uint16 public strategistFeeBps;
+    uint16 public referrerFeeBps;
     uint public referralDuration;
 
-    event FeeUpdated(uint16 feeBps);
-    event FeeSharingUpdated(uint16 strategistFeeSharingBps, uint16 referrerFeeSharingBps);
+    event FeesUpdated(uint16 protocolFeeBps, uint16 strategistFeeBps, uint16 referrerFeeBps);
     event FeeDistributed(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
     event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
@@ -66,13 +66,12 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     constructor(
         address _owner,
         address _treasury,
-        uint16 _feeBps,
-        uint16 _strategistFeeSharingBps,
-        uint16 _referrerFeeSharingBps,
+        uint16 _protocolFeeBps,
+        uint16 _strategistFeeBps,
+        uint16 _referrerFeeBps,
         uint _referralDuration
     ) UseTreasury(_owner, _treasury) {
-        _setFeeSharing(_strategistFeeSharingBps, _referrerFeeSharingBps);
-        _setFeeBps(_feeBps);
+        _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
 
         referralDuration = _referralDuration;
     }
@@ -81,32 +80,27 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         return _positions[_positionId];
     }
 
-    function setFeeBps(uint16 _feeBps) external onlyOwner {
-        _setFeeBps(_feeBps);
+    function setFees(
+        uint16 _protocolFeeBps,
+        uint16 _strategistFeeBps,
+        uint16 _referrerFeeBps
+    ) external onlyOwner {
+        _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
     }
 
-    /// @dev max fee is 1%
-    function _setFeeBps(uint16 _feeBps) internal {
-        if (_feeBps > 100)
+    function _setFees(
+        uint16 _protocolFeeBps,
+        uint16 _strategistFeeBps,
+        uint16 _referrerFeeBps
+    ) internal {
+        if ((_protocolFeeBps + _strategistFeeBps + _referrerFeeBps) > MAX_TOTAL_FEE_BPS)
             revert InvalidInput();
 
-        feeBps = _feeBps;
+        protocolFeeBps = _protocolFeeBps;
+        strategistFeeBps = _strategistFeeBps;
+        referrerFeeBps = _referrerFeeBps;
 
-        emit FeeUpdated(_feeBps);
-    }
-
-    function setFeeSharing(uint16 _strategistFeeSharingBps, uint16 _referrerFeeSharingBps) external onlyOwner {
-        _setFeeSharing(_strategistFeeSharingBps, _referrerFeeSharingBps);
-    }
-
-    function _setFeeSharing(uint16 _strategistFeeSharingBps, uint16 _referrerFeeSharingBps) internal {
-        if ((_strategistFeeSharingBps + _referrerFeeSharingBps) > 1e4)
-            revert InvalidInput();
-
-        strategistFeeSharingBps = _strategistFeeSharingBps;
-        referrerFeeSharingBps = _referrerFeeSharingBps;
-
-        emit FeeSharingUpdated(_strategistFeeSharingBps, _referrerFeeSharingBps);
+        emit FeesUpdated(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
     }
 
     // TODO add invest with permit and invest native
@@ -171,28 +165,29 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         StrategyIdentifier memory _strategy
     ) internal returns (uint remainingAmount) {
         address referrer = _getReferrer(msg.sender);
-        uint totalFee = (_inputAmount * feeBps) / 1e4;
-        uint strategistFee;
-        uint referrerFee;
+        bool hasReferrer = referrer != address(0);
+
+        remainingAmount = _inputAmount;
 
         if (_strategy.strategist != address(0)) {
-            strategistFee = (totalFee * strategistFeeSharingBps) / 1e4;
+            uint strategistFee = (_inputAmount * strategistFeeBps) / 1e4;
             rewards[_strategy.strategist][_token] += strategistFee;
+            remainingAmount -= strategistFee;
             emit FeeDistributed(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
         }
 
-        if (referrer != address(0)) {
-            referrerFee = (totalFee * referrerFeeSharingBps) / 1e4;
+        if (hasReferrer) {
+            uint referrerFee = (_inputAmount * referrerFeeBps) / 1e4;
             rewards[referrer][_token] += referrerFee;
+            remainingAmount -= referrerFee;
             emit FeeDistributed(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
-        uint treasuryFee = totalFee - strategistFee - referrerFee;
-        rewards[_getTreasury()][_token] += treasuryFee;
-        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, treasuryFee, FeeReceiver.TREASURY);
-
-        return _inputAmount - totalFee;
+        uint protocolFee = (hasReferrer ? protocolFeeBps + referrerFeeBps : protocolFeeBps) * _inputAmount / 1e4;
+        rewards[_getTreasury()][_token] += protocolFee;
+        remainingAmount -= protocolFee;
+        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);
     }
 
     function _setReferrer(address _referrer) internal virtual {
