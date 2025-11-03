@@ -5,11 +5,13 @@ import "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {RouterParameters} from "@uniswap/universal-router/contracts/types/RouterParameters.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 
 import {Constants} from "./Constants.sol";
+import {UniswapV3Helper} from "./UniswapV3Helper.sol";
 import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
@@ -39,6 +41,25 @@ contract Deployers is Test {
     IUniversalRouter public universalRouter;
     IUniswapV3Factory public factoryUniV3;
     INonfungiblePositionManager public positionManagerUniV3;
+    IUniswapV3Pool public usdtWethPool;
+    IUniswapV3Pool public usdtWbtcPool;
+    IUniswapV3Pool public wethWbtcPool;
+
+    // Fees
+    uint16 public immutable strategyFeeBps = 10; // 0.1%
+    uint16 public immutable referrerFeeSharingBps = 2_500; // 25%
+    uint16 public immutable strategistFeeSharingBps = 2_500; // 25%
+
+    function deployBaseContracts() public {
+        vm.startPrank(owner);
+
+        deployTokens();
+        deployUniV3();
+        deployAndInitLiquidityPools();
+        deployHubModules();
+
+        vm.stopPrank();
+    }
 
     /// @notice Deploys test tokens
     function deployTokens() internal {
@@ -48,18 +69,14 @@ contract Deployers is Test {
     }
 
     /// @notice Deploys DeFihub modules
-    function deployModules() internal {
-        uint16 feeBps = 10; // 0.1%
-        uint16 referrerFeeSharingBps = 2500; // 25%
-        uint16 strategistFeeSharingBps = 2500; // 25%
-
+    function deployHubModules() internal {
         strategyPositionModule = new StrategyPositionModule(
             owner,
             treasury,
-            feeBps,
+            strategyFeeBps,
             strategistFeeSharingBps,
             referrerFeeSharingBps,
-            86400 // 24 hours of referral duration
+            24 hours // Referral duration
         );
 
         liquidityPositionModule = new LiquidityPositionModule(
@@ -117,6 +134,50 @@ contract Deployers is Test {
                         v4PoolManager: Constants.ZERO_ADDRESS
                     })
                 )
+            )
+        );
+    }
+
+    function deployAndInitLiquidityPools() public {
+        usdtWethPool = IUniswapV3Pool(
+            UniswapV3Helper.mintAndAddLiquidity(
+                factoryUniV3,
+                positionManagerUniV3,
+                usdt,
+                weth,
+                Constants.ONE_MILLION_ETHER,
+                Constants.ONE_MILLION_ETHER / Constants.WETH_PRICE,
+                Constants.USD_PRICE,
+                Constants.WETH_PRICE, 
+                owner
+            )
+        );
+
+        usdtWbtcPool = IUniswapV3Pool(
+            UniswapV3Helper.mintAndAddLiquidity(
+                factoryUniV3,
+                positionManagerUniV3,
+                usdt,
+                wbtc,
+                Constants.ONE_MILLION_ETHER,
+                Constants.ONE_MILLION_ETHER / Constants.WBTC_PRICE,
+                Constants.USD_PRICE,
+                Constants.WBTC_PRICE, 
+                owner
+            )
+        );
+
+        wethWbtcPool = IUniswapV3Pool(
+            UniswapV3Helper.mintAndAddLiquidity(
+                factoryUniV3,
+                positionManagerUniV3,
+                weth,
+                wbtc,
+                Constants.ONE_MILLION_ETHER / Constants.WETH_PRICE,
+                Constants.ONE_MILLION_ETHER / Constants.WBTC_PRICE,
+                Constants.WETH_PRICE,
+                Constants.WBTC_PRICE, 
+                owner
             )
         );
     }
