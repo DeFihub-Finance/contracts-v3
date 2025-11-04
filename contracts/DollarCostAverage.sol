@@ -67,7 +67,9 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     uint16 public swapFeeBps;
 
     event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken, uint32 interval);
-    event PositionCreated(address user, uint poolId, uint tokenId, uint swaps, uint amountPerSwap, uint finalSwap);
+    event PositionCreated(address owner, uint tokenId, uint numberOfPositions);
+    event PositionCollected(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
+    event PositionClosed(address owner, address beneficiary, uint tokenId, uint[2][] withdrawnAmounts);
     event Swap(PoolIdentifier poolId, uint amountIn, uint amountOut);
     event SwapperUpdated(address swapper);
     event SwapFeeUpdated(uint16 swapFeeBps);
@@ -168,12 +170,32 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             );
         }
 
-//        emit PositionCreated(msg.sender, _poolId, positionId, _swaps, amountPerSwap, finalSwap);
+        emit PositionCreated(msg.sender, _tokenId, params.length);
+    }
+
+    function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
+        Position[] storage positions = _tokenToPositions[_tokenId];
+        uint[] memory withdrawnAmounts = new uint[](positions.length);
+
+        for (uint i; i < positions.length; ++i) {
+            Position storage position = positions[_tokenId];
+            Pool storage pool = _getPool(position.poolId); // TODO gasopt: check if cheaper removing mappings from this struct so it can be memory instead of storage
+
+            uint outputTokenAmount = _calculateOutputTokenBalance(position, pool);
+
+            position.lastUpdateSwap = pool.performedSwaps;
+
+            position.poolId.outputToken.safeTransfer(_beneficiary, outputTokenAmount);
+
+            withdrawnAmounts[i] = outputTokenAmount;
+        }
+
+        emit PositionCollected(msg.sender, _beneficiary, _tokenId, withdrawnAmounts);
     }
 
     function _closePosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
         Position[] storage positions = _tokenToPositions[_tokenId];
-        // TODO emit event with withdrawn amounts
+        uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
 
         for (uint i; i < positions.length; ++i) {
             Position storage position = positions[_tokenId];
@@ -195,27 +217,11 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
             if (outputTokenAmount > 0)
                 position.poolId.outputToken.safeTransfer(_beneficiary, outputTokenAmount);
+
+            withdrawnAmounts[i] = [inputTokenAmount, outputTokenAmount];
         }
 
-//        emit PositionClosed(msg.sender, _positionId, inputTokenAmount, outputTokenAmount);
-    }
-
-    function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
-        Position[] storage positions = _tokenToPositions[_tokenId];
-        // TODO emit event with withdrawn amounts
-
-        for (uint i; i < positions.length; ++i) {
-            Position storage position = positions[_tokenId];
-            Pool storage pool = _getPool(position.poolId); // TODO gasopt: check if cheaper removing mappings from this struct so it can be memory instead of storage
-
-            uint outputTokenAmount = _calculateOutputTokenBalance(position, pool);
-
-            position.lastUpdateSwap = pool.performedSwaps;
-
-            position.poolId.outputToken.safeTransfer(_beneficiary, outputTokenAmount);
-        }
-
-//        emit PositionCollected(msg.sender, _positionId, outputTokenAmount);
+        emit PositionClosed(msg.sender, _beneficiary, _tokenId, withdrawnAmounts);
     }
 
     function _calculateInputTokenBalance(
@@ -230,7 +236,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     function _calculateOutputTokenBalance(
         Position memory _position,
-        Pool storage _pool // TODO if pool is storage this function can be pure instead of view
+        Pool storage _pool // TODO if pool mappings are removed from the struct, it can be memory and this function can be pure instead of view
     ) internal view returns (uint) {
         uint32 swapToConsider = _pool.performedSwaps > _position.finalSwap
             ? _position.finalSwap
