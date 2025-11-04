@@ -178,7 +178,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         uint[] memory withdrawnAmounts = new uint[](positions.length);
 
         for (uint i; i < positions.length; ++i) {
-            Position storage position = positions[_tokenId];
+            Position storage position = positions[i];
             Pool storage pool = _getPool(position.poolId); // TODO gasopt: check if cheaper removing mappings from this struct so it can be memory instead of storage
 
             uint outputTokenAmount = _calculateOutputTokenBalance(position, pool);
@@ -198,7 +198,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         uint[2][] memory withdrawnAmounts = new uint[2][](positions.length);
 
         for (uint i; i < positions.length; ++i) {
-            Position storage position = positions[_tokenId];
+            Position storage position = positions[i];
             Pool storage pool = _getPool(position.poolId);
 
             uint inputTokenAmount = _calculateInputTokenBalance(position, pool.performedSwaps);
