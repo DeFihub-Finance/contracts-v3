@@ -40,7 +40,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     struct SwapParams {
         PoolIdentifier poolId;
-        bytes encodedSwapData;
+        HubRouter.HubSwap swap;
     }
 
     struct CreatePositionParams {
@@ -53,6 +53,8 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     uint32 public constant WEEKLY_INTERVAL = 1 weeks;
     uint32 public constant MONTHLY_INTERVAL = 4 weeks;
 
+    uint16 public constant MAX_SWAP_FEE_BPS = 100; // 1%
+
     // TODO gasopt: test if changing to uint256 saves gas by avoiding type conversions
     uint128 public constant SWAP_QUOTE_PRECISION = 1e18;
 
@@ -62,11 +64,13 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     mapping(uint => Position[]) internal _tokenToPositions;
 
     address public swapper;
+    uint16 public swapFeeBps;
 
     event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken, uint32 interval);
     event PositionCreated(address user, uint poolId, uint tokenId, uint swaps, uint amountPerSwap, uint finalSwap);
 //    event Swap(uint poolId, uint amountIn, uint amountOut); // TODO maybe add extra data
     event SwapperUpdated(address swapper);
+    event SwapFeeUpdated(uint16 swapFeeBps);
 
     error InvalidInterval();
     error InvalidAddress();
@@ -76,11 +80,14 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     error TooEarlyToSwap();
     error NoTokensToSwap();
 
-    // TODO add swap fee
     constructor(
         address _owner,
-        address _treasury
+        address _treasury,
+        address _swapper,
+        uint16 _swapFeeBps
     ) UseTreasury(_owner, _treasury) {
+        _setSwapper(_swapper);
+        _setSwapFeeBps(_swapFeeBps);
     }
 
     function swap(SwapParams[] calldata _swaps) external {
@@ -103,7 +110,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
                 revert NoTokensToSwap();
 
             uint outputTokenAmount = HubRouter.execute(
-                swapParam.encodedSwapData,
+                swapParam.swap,
                 swapParam.poolId.inputToken,
                 swapParam.poolId.outputToken,
                 inputTokenAmount
@@ -214,15 +221,6 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 //        emit PositionCollected(msg.sender, _positionId, outputTokenAmount);
     }
 
-    function setSwapper(address _swapper) external onlyOwner {
-        if (_swapper == address(0))
-            revert InvalidAddress();
-
-        swapper = _swapper;
-
-        emit SwapperUpdated(_swapper);
-    }
-
     function _calculateInputTokenBalance(
         Position memory _position,
         uint _performedSwaps
@@ -255,5 +253,31 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     function _getPool(PoolIdentifier memory _id) internal view returns (Pool storage) {
         return _pools[_id.inputToken][_id.outputToken][_id.interval];
+    }
+
+    function setSwapper(address _swapper) external onlyOwner {
+        _setSwapper(_swapper);
+    }
+
+    function _setSwapper(address _swapper) internal {
+        if (_swapper == address(0))
+            revert InvalidAddress();
+
+        swapper = _swapper;
+
+        emit SwapperUpdated(_swapper);
+    }
+
+    function setSwapFeeBps(uint16 _swapFeeBps) external onlyOwner {
+        _setSwapFeeBps(_swapFeeBps);
+    }
+
+    function _setSwapFeeBps(uint16 _swapFeeBps) internal {
+        if (_swapFeeBps > MAX_SWAP_FEE_BPS)
+            revert InvalidAmount();
+
+        swapFeeBps = _swapFeeBps;
+
+        emit SwapFeeUpdated(_swapFeeBps);
     }
 }
