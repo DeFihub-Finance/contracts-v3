@@ -30,19 +30,19 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         uint amount;
     }
 
-    mapping(uint => Position[]) internal _positions;
+    mapping(uint => Position[]) internal _tokenToPositions;
     mapping(uint => bool) internal _closedPositions;
 
-    event PositionClosed(address owner, address beneficiary, uint positionId, uint[] withdrawnAmounts);
+    event PositionClosed(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
 
     error InvalidBasisPoints();
 
-    function getPositions(uint _positionId) external view returns (Position[] memory) {
-        return _positions[_positionId];
+    function getPositions(uint _tokenId) external view returns (Position[] memory) {
+        return _tokenToPositions[_tokenId];
     }
 
     function _createPosition(
-        uint _positionId,
+        uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
@@ -55,7 +55,7 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            _positions[_positionId].push(Position({
+            _tokenToPositions[_tokenId].push(Position({
                 token: investment.token,
                 amount: HubRouter.execute(
                     investment.swap,
@@ -69,21 +69,21 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
 
-    function _collectPosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-        _claimTokens(_beneficiary, _positionId);
+    function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
+        _claimTokens(_beneficiary, _tokenId);
     }
 
-    function _closePosition(address _beneficiary, uint _positionId, bytes memory) internal override {
-        _claimTokens(_beneficiary, _positionId);
+    function _closePosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
+        _claimTokens(_beneficiary, _tokenId);
     }
 
-    function _claimTokens(address _beneficiary, uint _positionId) internal {
-        if (_closedPositions[_positionId])
+    function _claimTokens(address _beneficiary, uint _tokenId) internal {
+        if (_closedPositions[_tokenId])
             return;
 
-        _closedPositions[_positionId] = true;
+        _closedPositions[_tokenId] = true;
 
-        Position[] memory positions = _positions[_positionId];
+        Position[] memory positions = _tokenToPositions[_tokenId];
         uint[] memory withdrawnAmounts = new uint[](positions.length);
 
         for (uint i; i < positions.length; ++i) {
@@ -92,6 +92,6 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
             position.token.safeTransfer(_beneficiary, position.amount);
         }
 
-        emit PositionClosed(msg.sender, _beneficiary, _positionId, withdrawnAmounts);
+        emit PositionClosed(msg.sender, _beneficiary, _tokenId, withdrawnAmounts);
     }
 }

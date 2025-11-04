@@ -32,7 +32,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     struct Position {
         address moduleAddress;
-        uint modulePositionId;
+        uint moduleTokenId;
     }
 
     struct Referral {
@@ -40,8 +40,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint deadline;
     }
 
-    /// @notice positionId => Position[]
-    mapping(uint => Position[]) internal _positions;
+    mapping(uint => Position[]) internal _tokenToPositions;
 
     /// @notice referred account => referrer account
     mapping(address => Referral) internal _referrals;
@@ -76,8 +75,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         referralDuration = _referralDuration;
     }
 
-    function getPositions(uint _positionId) external view returns (Position[] memory) {
-        return _positions[_positionId];
+    function getPositions(uint _tokenId) external view returns (Position[] memory) {
+        return _tokenToPositions[_tokenId];
     }
 
     function setFees(
@@ -107,7 +106,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
-        uint _strategyPositionId,
+        uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
@@ -128,34 +127,34 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
 
-            uint modulePositionId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
+            uint moduleTokenId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
-            _positions[_strategyPositionId].push(Position({
+            _tokenToPositions[_tokenId].push(Position({
                 moduleAddress: investment.module,
-                modulePositionId: modulePositionId
+                moduleTokenId: moduleTokenId
             }));
         }
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
 
-    function _collectPosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
+    function _collectPosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
-        for (uint i; i < _positions[_positionId].length; ++i) {
-            Position memory position = _positions[_positionId][i];
+        for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
+            Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.modulePositionId, data[i]);
+            BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
-    function _closePosition(address _beneficiary, uint _positionId, bytes memory _data) internal override {
+    function _closePosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
-        for (uint i; i < _positions[_positionId].length; ++i) {
-            Position memory position = _positions[_positionId][i];
+        for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
+            Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.modulePositionId, data[i]);
+            BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
