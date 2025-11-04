@@ -68,7 +68,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken, uint32 interval);
     event PositionCreated(address user, uint poolId, uint tokenId, uint swaps, uint amountPerSwap, uint finalSwap);
-//    event Swap(uint poolId, uint amountIn, uint amountOut); // TODO maybe add extra data
+    event Swap(PoolIdentifier poolId, uint amountIn, uint amountOut);
     event SwapperUpdated(address swapper);
     event SwapFeeUpdated(uint16 swapFeeBps);
 
@@ -125,8 +125,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             pool.nextSwapAmount -= pool.endingPositionDeduction[pool.performedSwaps + 1];
             pool.lastSwapTimestamp = timestamp;
 
-            // TODO event
-//            emit Swap(inputTokenAmount, outputTokenAmount);
+            emit Swap(swapParam.poolId, inputTokenAmount, outputTokenAmount);
         }
     }
 
