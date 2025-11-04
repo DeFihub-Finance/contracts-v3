@@ -116,8 +116,6 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
                 inputTokenAmount
             );
 
-            // TODO check slippage against oracle
-
             uint swapQuote = (outputTokenAmount * SWAP_QUOTE_PRECISION) / inputTokenAmount;
             mapping(uint32 => uint) storage poolAccruedQuotes = pool.accruedSwapQuote;
 
