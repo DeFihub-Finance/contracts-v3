@@ -18,8 +18,6 @@ library Constants {
     uint24 public constant WETH_PRICE = 10_000;
     uint24 public constant WBTC_PRICE = 100_000;
 
-    uint public constant ONE_MILLION_ETHER = 1_000_000 ether;
-
     // Artifact paths used for test deployments 
     string public constant FACTORY_PATH = "node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json";
     string public constant QUOTER_PATH = "node_modules/@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json";

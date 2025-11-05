@@ -11,6 +11,8 @@ import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
 
 library UniswapV3Helper {
+    uint constant internal Q192 = 1 << 192;
+
     function mintAndAddLiquidity(
         IUniswapV3Factory factory,
         INonfungiblePositionManager positionManager,
@@ -18,16 +20,14 @@ library UniswapV3Helper {
         TestERC20 tokenB,
         uint amountA,
         uint amountB,
-        uint24 priceA,
-        uint24 priceB,
         address to
     ) internal returns (address poolAddress) {
         (TestERC20 token0, TestERC20 token1) = sortTokens(tokenA, tokenB);
         (address addr0, address addr1) = (address(token0), address(token1));
 
-        (uint amount0, uint amount1, uint24 price0, uint24 price1) = token0 == tokenA
-            ? (amountA, amountB, priceA, priceB)
-            : (amountB, amountA, priceB, priceA);
+        (uint amount0, uint amount1) = token0 == tokenA
+            ? (amountA, amountB)
+            : (amountB, amountA);
 
         poolAddress = factory.getPool(addr0, addr1, Constants.FEE_MEDIUM);
 
@@ -36,12 +36,7 @@ library UniswapV3Helper {
                 addr0,
                 addr1,
                 Constants.FEE_MEDIUM,
-                encodeSqrtPriceX96(
-                    price0,
-                    price1,
-                    token0.decimals(),
-                    token1.decimals()
-                )
+                encodeSqrtPriceX96(amount0, amount1)
             );
         }
 
@@ -69,18 +64,12 @@ library UniswapV3Helper {
     }
 
     function encodeSqrtPriceX96(
-        uint24 price0,
-        uint24 price1,
-        uint8 decimals0,
-        uint8 decimals1
+        uint amount0,
+        uint amount1
     ) internal pure returns (uint160 sqrtPriceX96) {
-        // Normalize to raw token amounts so price = (amount1 / amount0)
-        uint numerator = price1 * 10 ** decimals1;
-        uint denominator = price0 * 10 ** decimals0;
-
         // Compute ratio in Q192: ratioX192 = (amount1 << 192) / amount0
         // Use 512-bit mulDiv to avoid overflow and rounding.
-        uint ratioX192 = Math.mulDiv(numerator, 1 << 192, denominator);
+        uint ratioX192 = Math.mulDiv(amount1, Q192, amount0);
 
         // sqrtPriceX96 = floor( sqrt(ratioX192) )
         sqrtPriceX96 = uint160(Math.sqrt(ratioX192));
