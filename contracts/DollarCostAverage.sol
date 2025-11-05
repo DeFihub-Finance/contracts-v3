@@ -63,6 +63,8 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     mapping(uint => Position[]) internal _tokenToPositions;
 
+    mapping(IERC20 => uint) internal _fees;
+
     address public swapper;
     uint16 public swapFeeBps;
 
@@ -73,6 +75,8 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     event Swap(PoolIdentifier poolId, uint amountIn, uint amountOut);
     event SwapperUpdated(address swapper);
     event SwapFeeUpdated(uint16 swapFeeBps);
+    event FeeDistributed(PoolIdentifier pool, uint fee);
+    event FeeCollected(IERC20 token, uint fee);
 
     error InvalidInterval();
     error InvalidAddress();
@@ -106,10 +110,17 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             if (timestamp < pool.lastSwapTimestamp + swapParam.poolId.interval)
                 revert TooEarlyToSwap();
 
-            uint inputTokenAmount = pool.nextSwapAmount;
+            uint nextSwapAmount = pool.nextSwapAmount;
 
-            if (inputTokenAmount == 0)
+            if (nextSwapAmount == 0)
                 revert NoTokensToSwap();
+
+            uint swapFee = nextSwapAmount * swapFeeBps / 1e4;
+            uint inputTokenAmount = nextSwapAmount - swapFee;
+
+            _fees[swapParam.poolId.inputToken] += swapFee;
+
+            emit FeeDistributed(swapParam.poolId, swapFee);
 
             uint outputTokenAmount = HubRouter.execute(
                 swapParam.swap,
@@ -133,6 +144,18 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
     function getPositions(uint _tokenId) external virtual view returns (Position[] memory) {
         return _tokenToPositions[_tokenId];
+    }
+
+    function collectFees(IERC20 _token, address _beneficiary) external onlyOwner {
+        uint fee = _fees[_token];
+
+        if (fee == 0)
+            return;
+
+        _fees[_token] = 0;
+        _token.safeTransfer(_beneficiary, fee);
+
+        emit FeeCollected(_token, fee);
     }
 
     function _createPosition(
