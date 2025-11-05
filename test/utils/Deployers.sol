@@ -49,9 +49,9 @@ contract Deployers is Test {
     IUniswapV3Pool public wethWbtcPool;
 
     // Fees
-    uint16 public immutable strategyFeeBps = 10; // 0.1%
-    uint16 public immutable referrerFeeSharingBps = 2_500; // 25%
-    uint16 public immutable strategistFeeSharingBps = 2_500; // 25%
+    uint16 public immutable protocolFeeBps = 100; // 1%
+    uint16 public immutable referrerFeeSharingBps = 10; // 0.1%
+    uint16 public immutable strategistFeeSharingBps = 10; // 0.1%
 
     function deployBaseContracts() public {
         vm.startPrank(owner);
@@ -77,7 +77,7 @@ contract Deployers is Test {
             owner,
             treasury,
             IWETH(address(weth)),
-            strategyFeeBps,
+            protocolFeeBps,
             strategistFeeSharingBps,
             referrerFeeSharingBps,
             24 hours // Referral duration
