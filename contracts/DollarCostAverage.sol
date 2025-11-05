@@ -41,10 +41,17 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         HubRouter.HubSwap swap;
     }
 
-    struct CreatePositionParams {
+    struct Investment {
         PoolIdentifier poolId;
         uint32 swaps;
-        uint amount;
+        HubRouter.HubSwap swap;
+        uint inputAmount;
+    }
+
+    struct CreatePositionParams {
+        IERC20 inputToken;
+        uint inputAmount;
+        Investment[] investments;
     }
 
     uint32 public constant SWAP_INTERVAL = 1 days;
@@ -156,38 +163,51 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
-        CreatePositionParams[] memory params = abi.decode(_encodedInvestments, (CreatePositionParams[]));
+        CreatePositionParams memory params = abi.decode(_encodedInvestments, (CreatePositionParams));
+        uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
+        uint totalAllocatedAmount;
 
-        for (uint i; i < params.length; ++i) {
-            CreatePositionParams memory param = params[i];
+        for (uint i; i < params.investments.length; ++i) {
+            Investment memory investment = params.investments[i];
 
-            if (param.swaps == 0)
+            if (investment.swaps == 0)
                 revert InvalidNumberOfSwaps();
 
-            if (param.amount == 0)
+            if (investment.inputAmount == 0)
                 revert InvalidAmount();
 
-            Pool storage pool = _getPool(param.poolId);
+            totalAllocatedAmount += investment.inputAmount;
+
+            uint inputAmount = HubRouter.execute(
+                investment.swap,
+                params.inputToken,
+                investment.poolId.inputToken,
+                investment.inputAmount
+            );
+
+            Pool storage pool = _getPool(investment.poolId);
             Position[] storage positions = _tokenToPositions[_tokenId];
 
-            uint amountPerSwap = param.amount / param.swaps;
-            uint32 finalSwap = pool.performedSwaps + param.swaps;
+            uint amountPerSwap = inputAmount / investment.swaps;
+            uint32 finalSwap = pool.performedSwaps + investment.swaps;
 
             pool.nextSwapAmount += amountPerSwap;
             pool.endingPositionDeduction[finalSwap + 1] += amountPerSwap;
 
             positions.push(
                 Position({
-                    swaps: param.swaps,
+                    swaps: investment.swaps,
                     amountPerSwap: amountPerSwap,
-                    poolId: param.poolId,
+                    poolId: investment.poolId,
                     finalSwap: finalSwap,
                     lastUpdateSwap: pool.performedSwaps
                 })
             );
         }
 
-        emit PositionCreated(msg.sender, _tokenId, params.length);
+        _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
+
+        emit PositionCreated(msg.sender, _tokenId, params.investments.length);
     }
 
     function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
