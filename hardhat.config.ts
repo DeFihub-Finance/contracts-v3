@@ -27,6 +27,9 @@ const config: HardhatUserConfig = {
   },
   test: {
     solidity: {
+      fuzz: {
+        runs: 1024,
+      },
       fsPermissions: {
         readDirectory: ["node_modules/@uniswap"]
       },
