@@ -15,8 +15,6 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     struct PoolIdentifier {
         IERC20 inputToken;
         IERC20 outputToken;
-
-        uint32 interval;
     }
 
     struct Position {
@@ -49,17 +47,14 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         uint amount;
     }
 
-    uint32 public constant DAILY_INTERVAL = 1 days;
-    uint32 public constant WEEKLY_INTERVAL = 1 weeks;
-    uint32 public constant MONTHLY_INTERVAL = 4 weeks;
-
+    uint32 public constant SWAP_INTERVAL = 1 days;
     uint16 public constant MAX_SWAP_FEE_BPS = 100; // 1%
 
     // TODO gasopt: test if changing to uint256 saves gas by avoiding type conversions
     uint128 public constant SWAP_QUOTE_PRECISION = 1e18;
 
-    // @dev inputToken => outputToken => interval => boolean
-    mapping(IERC20 => mapping(IERC20 => mapping(uint32 => Pool))) public _pools;
+    // @dev inputToken => outputToken => boolean
+    mapping(IERC20 => mapping(IERC20 => Pool)) public _pools;
 
     mapping(uint => Position[]) internal _tokenToPositions;
 
@@ -68,7 +63,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     address public swapper;
     uint16 public swapFeeBps;
 
-    event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken, uint32 interval);
+    event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken);
     event PositionCreated(address owner, uint tokenId, uint numberOfPositions);
     event PositionCollected(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, uint[2][] withdrawnAmounts);
@@ -78,7 +73,6 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     event FeeDistributed(PoolIdentifier pool, uint fee);
     event FeeCollected(IERC20 token, uint fee);
 
-    error InvalidInterval();
     error InvalidAddress();
     error InvalidAmount();
     error InvalidNumberOfSwaps();
@@ -107,7 +101,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
             Pool storage pool = _getPool(swapParam.poolId);
 
-            if (timestamp < pool.lastSwapTimestamp + swapParam.poolId.interval)
+            if (timestamp < pool.lastSwapTimestamp + SWAP_INTERVAL)
                 revert TooEarlyToSwap();
 
             uint nextSwapAmount = pool.nextSwapAmount;
@@ -278,7 +272,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
     }
 
     function _getPool(PoolIdentifier memory _id) internal view returns (Pool storage) {
-        return _pools[_id.inputToken][_id.outputToken][_id.interval];
+        return _pools[_id.inputToken][_id.outputToken];
     }
 
     function setSwapper(address _swapper) external onlyOwner {
