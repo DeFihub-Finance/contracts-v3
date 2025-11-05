@@ -13,6 +13,7 @@ import {Constants} from "./Constants.sol";
 import {UniswapV3Helper} from "./UniswapV3Helper.sol";
 import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
+import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
 import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
 import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
@@ -33,6 +34,7 @@ contract Deployers is Test {
     TestERC20 public wbtc;
 
     // DeFihub contracts
+    BuyPositionModule public buyPositionModule;
     StrategyPositionModule public strategyPositionModule;
     LiquidityPositionModule public liquidityPositionModule;
 
@@ -86,6 +88,8 @@ contract Deployers is Test {
             treasury,
             strategistFeeSharingBps 
         );
+
+        buyPositionModule = new BuyPositionModule();
     }
 
     /// @notice Deploys Uniswap V3 contracts
