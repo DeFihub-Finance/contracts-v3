@@ -27,6 +27,7 @@ const config: HardhatUserConfig = {
   },
   test: {
     solidity: {
+      allowInternalExpectRevert: true,
       fuzz: {
         runs: 1024,
       },
