@@ -56,23 +56,23 @@ contract Deployers is Test {
     function deployBaseContracts() public {
         vm.startPrank(owner);
 
-        deployTokens();
-        deployUniV3();
-        deployAndInitLiquidityPools();
-        deployHubModules();
+        _deployTokens();
+        _deployUniV3();
+        _deployAndInitLiquidityPools();
+        _deployHubModules();
 
         vm.stopPrank();
     }
 
     /// @notice Deploys test tokens
-    function deployTokens() internal {
+    function _deployTokens() internal {
         weth = new TestWETH();
         wbtc = new TestERC20(8);
         usdt = new TestERC20(18);
     }
 
     /// @notice Deploys DeFihub modules
-    function deployHubModules() internal {
+    function _deployHubModules() internal {
         strategyPositionModule = new StrategyPositionModule(
             owner,
             treasury,
@@ -93,11 +93,11 @@ contract Deployers is Test {
     }
 
     /// @notice Deploys Uniswap V3 contracts
-    function deployUniV3() internal {
-        factoryUniV3 = IUniswapV3Factory(deployCodeFromArtifact(Constants.FACTORY_PATH));
+    function _deployUniV3() internal {
+        factoryUniV3 = IUniswapV3Factory(_deployCodeFromArtifact(Constants.FACTORY_PATH));
 
         positionManagerUniV3 = INonfungiblePositionManager(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.POSITION_MANAGER_PATH,
                 abi.encode(
                     address(factoryUniV3),
@@ -108,21 +108,21 @@ contract Deployers is Test {
         );
 
         quoterUniV3 = IQuoter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.QUOTER_PATH,
                 abi.encode(address(factoryUniV3), address(weth))
             )
         );
 
         routerUniV3 = ISwapRouter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.SWAP_ROUTER_PATH,
                 abi.encode(address(factoryUniV3), address(weth))
             )
         );
 
         universalRouter = IUniversalRouter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.UNIVERSAL_ROUTER_PATH,
                 abi.encode(
                     RouterParameters({
@@ -144,7 +144,7 @@ contract Deployers is Test {
         );
     }
 
-    function deployAndInitLiquidityPools() public {
+    function _deployAndInitLiquidityPools() internal {
         uint ONE_BILLION_ETHER = 1_000_000_000 ether;
         uint ONE_BILLION_WBTC = 1_000_000_000 * 10 ** wbtc.decimals();
 
@@ -188,10 +188,10 @@ contract Deployers is Test {
     /// @notice Deploys a contract from an artifact
     /// @param path The path to the artifact
     /// @return deployedAddress The address of the deployed contract
-    function deployCodeFromArtifact(
+    function _deployCodeFromArtifact(
         string memory path
     ) internal returns (address deployedAddress) {
-        bytes memory bytecode = getCodeFromArtifact(path);
+        bytes memory bytecode = _getCodeFromArtifact(path);
 
         assembly {
             deployedAddress := create(0, add(bytecode, 0x20), mload(bytecode))
@@ -204,12 +204,12 @@ contract Deployers is Test {
     /// @param path The path to the artifact
     /// @param args The arguments to pass to the constructor
     /// @return deployedAddress The address of the deployed contract
-    function deployCodeFromArtifact(
+    function _deployCodeFromArtifact(
         string memory path,
         bytes memory args
     ) internal returns (address deployedAddress) {
         bytes memory bytecode = abi.encodePacked(
-            getCodeFromArtifact(path),
+            _getCodeFromArtifact(path),
             args
         );
 
@@ -223,7 +223,7 @@ contract Deployers is Test {
     /// @notice Gets the bytecode from an artifact
     /// @param path The path to the artifact
     /// @return bytecode The bytecode of the contract
-    function getCodeFromArtifact(
+    function _getCodeFromArtifact(
         string memory path
     ) internal view returns (bytes memory) {
         return stdJson.readBytes(vm.readFile(path), ".bytecode");
