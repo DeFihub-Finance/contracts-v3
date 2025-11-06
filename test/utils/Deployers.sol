@@ -185,6 +185,20 @@ contract Deployers is Test {
         );
     }
 
+    function _mintAndApprove(
+        uint amount,
+        TestERC20 token,
+        address recipient,
+        address spender
+    ) internal {
+        vm.startPrank(recipient);
+
+        token.mint(recipient, amount);
+        token.approve(spender, amount);
+        
+        vm.stopPrank();
+    }
+
     /// @notice Deploys a contract from an artifact
     /// @param path The path to the artifact
     /// @return deployedAddress The address of the deployed contract
