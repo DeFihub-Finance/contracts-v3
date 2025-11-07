@@ -32,6 +32,7 @@ contract Deployers is Test {
     TestWETH public weth;
     TestERC20 public usdt;
     TestERC20 public wbtc;
+    TestERC20[] public availableTokens;
 
     // DeFihub contracts
     BuyPositionModule public buyPositionModule;
@@ -69,6 +70,8 @@ contract Deployers is Test {
         weth = new TestWETH();
         wbtc = new TestERC20(8);
         usdt = new TestERC20(18);
+
+        availableTokens = [usdt, wbtc, weth];
     }
 
     /// @notice Deploys DeFihub modules
