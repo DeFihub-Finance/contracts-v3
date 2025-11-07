@@ -40,8 +40,6 @@ abstract contract BasePositionModule is ERC721 {
         tokenId = _createToken();
 
         _createPosition(tokenId, _encodedInvestments);
-
-        return tokenId;
     }
 
     function _createToken() internal returns (uint tokenId) {
