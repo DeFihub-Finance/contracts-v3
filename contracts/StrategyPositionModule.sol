@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {BasePositionModule} from "./abstract/BasePositionModule.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
+import {IWETH} from "./interfaces/external/IWETH.sol";
 
 contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), UseTreasury {
     using SafeERC20 for IERC20;
@@ -40,6 +41,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint deadline;
     }
 
+    IWETH public immutable WETH;
+
     mapping(uint => Position[]) internal _tokenToPositions;
 
     /// @notice referred account => referrer account
@@ -65,6 +68,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     constructor(
         address _owner,
         address _treasury,
+        IWETH _weth,
         uint16 _protocolFeeBps,
         uint16 _strategistFeeBps,
         uint16 _referrerFeeBps,
@@ -72,6 +76,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) UseTreasury(_owner, _treasury) {
         _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
 
+        WETH = IWETH(_weth);
         referralDuration = _referralDuration;
     }
 
@@ -102,6 +107,24 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         emit FeesUpdated(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
     }
 
+    /// @dev _encodedInvestments.inputAmount is ignored, msg.value is used instead
+    function createPositionEth(
+        bytes memory _encodedInvestments
+    ) external payable returns (uint tokenId) {
+        tokenId = _createToken();
+
+        WETH.deposit{value: msg.value}();
+
+        InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
+
+        if (address(params.inputToken) != address(WETH))
+            revert InvalidInput();
+
+        _makeInvestments(tokenId, params, msg.value);
+
+        return tokenId;
+    }
+
     // TODO add invest with permit and invest native
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
@@ -111,21 +134,25 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
-        _setReferrer(params.referrer);
+        _makeInvestments(_tokenId, params, _pullToken(params.inputToken, params.inputAmount));
+    }
+
+    function _makeInvestments(uint _tokenId, InvestParams memory _params, uint amount) internal {
+        _setReferrer(_params.referrer);
 
         uint totalAmount = _collectFees(
-            params.inputToken,
-            _pullToken(params.inputToken, params.inputAmount),
-            params.strategyIdentifier
+            _params.inputToken,
+            amount,
+            _params.strategyIdentifier
         );
         uint totalAllocatedAmount;
 
-        for (uint i; i < params.investments.length; ++i) {
-            Investment memory investment = params.investments[i];
+        for (uint i; i < _params.investments.length; ++i) {
+            Investment memory investment = _params.investments[i];
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
+            _params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
 
             uint moduleTokenId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 

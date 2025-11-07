@@ -37,15 +37,19 @@ abstract contract BasePositionModule is ERC721 {
     }
 
     function createPosition(bytes memory _encodedInvestments) external returns (uint tokenId) {
+        tokenId = _createToken();
+
+        _createPosition(tokenId, _encodedInvestments);
+
+        return tokenId;
+    }
+
+    function _createToken() internal returns (uint tokenId) {
         tokenId = _nextTokenId;
 
         _nextTokenId++;
 
         _safeMint(msg.sender, tokenId);
-
-        _createPosition(tokenId, _encodedInvestments);
-
-        return tokenId;
     }
 
     /// @param 0: tokenId
