@@ -130,8 +130,6 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             revert InvalidInput();
 
         _makeInvestments(tokenId, _params, msg.value);
-
-        return tokenId;
     }
 
     function createPositionPermit(
@@ -151,8 +149,6 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         );
 
         _makeInvestments(tokenId, _params, _pullToken(_params.inputToken, _params.inputAmount));
-
-        return tokenId;
     }
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
