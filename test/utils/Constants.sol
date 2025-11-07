@@ -8,6 +8,8 @@ library Constants {
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
     bytes32 public constant ZERO_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
+    uint16 public constant ONE_PERCENT_BPS = 100;
+
     // Pool fees
     uint24 public constant FEE_LOW = 500;
     uint24 public constant FEE_MEDIUM = 3000;
