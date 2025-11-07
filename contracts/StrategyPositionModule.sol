@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import {BasePositionModule} from "./abstract/BasePositionModule.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
@@ -39,6 +40,16 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     struct Referral {
         address referrer;
         uint deadline;
+    }
+
+    struct ERC20Permit {
+        address owner;
+        address spender;
+        uint value;
+        uint deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
     }
 
     IWETH public immutable WETH;
@@ -109,23 +120,40 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     /// @dev _encodedInvestments.inputAmount is ignored, msg.value is used instead
     function createPositionEth(
-        bytes memory _encodedInvestments
+        InvestParams memory _params
     ) external payable returns (uint tokenId) {
         tokenId = _createToken();
 
         WETH.deposit{value: msg.value}();
 
-        InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
-
-        if (address(params.inputToken) != address(WETH))
+        if (address(_params.inputToken) != address(WETH))
             revert InvalidInput();
 
-        _makeInvestments(tokenId, params, msg.value);
+        _makeInvestments(tokenId, _params, msg.value);
 
         return tokenId;
     }
 
-    // TODO add invest with permit and invest native
+    function createPositionPermit(
+        InvestParams memory _params,
+        ERC20Permit memory _permit
+    ) external returns (uint tokenId) {
+        tokenId = _createToken();
+
+        IERC20Permit(address(_params.inputToken)).permit(
+            _permit.owner,
+            _permit.spender,
+            _permit.value,
+            _permit.deadline,
+            _permit.v,
+            _permit.r,
+            _permit.s
+        );
+
+        _makeInvestments(tokenId, _params, _pullToken(_params.inputToken, _params.inputAmount));
+
+        return tokenId;
+    }
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
