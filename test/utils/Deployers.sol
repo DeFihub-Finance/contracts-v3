@@ -20,7 +20,7 @@ import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRo
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
 import {IWETH} from "../../contracts/interfaces/external/IWETH.sol";
 
-contract Deployers is Test {
+abstract contract Deployers is Test {
     // Accounts
     address public immutable owner = makeAddr("OWNER");
     address public immutable treasury = makeAddr("TREASURY");
