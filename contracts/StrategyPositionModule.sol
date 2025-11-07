@@ -87,7 +87,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) UseTreasury(_owner, _treasury) {
         _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
 
-        WETH = IWETH(_weth);
+        WETH = _weth;
         referralDuration = _referralDuration;
     }
 
@@ -118,16 +118,16 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         emit FeesUpdated(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
     }
 
-    /// @dev _encodedInvestments.inputAmount is ignored, msg.value is used instead
+    /// @dev _params.inputAmount is ignored, msg.value is used instead
     function createPositionEth(
         InvestParams memory _params
     ) external payable returns (uint tokenId) {
+        if (address(_params.inputToken) != address(WETH))
+            revert InvalidInput();
+
         tokenId = _createToken();
 
         WETH.deposit{value: msg.value}();
-
-        if (address(_params.inputToken) != address(WETH))
-            revert InvalidInput();
 
         _makeInvestments(tokenId, _params, msg.value);
     }
@@ -136,6 +136,9 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         InvestParams memory _params,
         ERC20Permit memory _permit
     ) external returns (uint tokenId) {
+        if (_permit.owner != msg.sender || _permit.spender != address(this))
+            revert Unauthorized();
+
         tokenId = _createToken();
 
         IERC20Permit(address(_params.inputToken)).permit(
