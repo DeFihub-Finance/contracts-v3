@@ -41,7 +41,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         TestERC20 inputToken,
         BuyPositionModule.Investment[] memory investments
     ) internal returns (uint tokenId) {
-        _mintAndApproveBuyModule(inputAmount, inputToken, account0);
+        _mintAndApprove(inputAmount, inputToken, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
         
@@ -135,18 +135,6 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
                 path: PathUniswapV3.init(_inputToken).addHop(Constants.FEE_MEDIUM, _outputToken)
             })
         );
-    }
-
-    /// @dev Mint token to a recipient and approve it to be spent by the buy module
-    /// @param amount Amount to be minted
-    /// @param token Token where the amount will be minted and approved
-    /// @param recipient Recipient of the minted token
-    function _mintAndApproveBuyModule(
-        uint amount, 
-        TestERC20 token, 
-        address recipient
-    ) internal {
-        _mintAndApprove(amount, token, recipient, address(buyPositionModule));
     }
 
     /// @dev Helper to assert a BuyModule's PositionClosed event will be emmited.

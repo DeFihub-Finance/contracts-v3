@@ -62,7 +62,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
 
         totalAmount -= 1; // Subtract to make it less than total allocations
 
-        _mintAndApproveBuyModule(totalAmount, usdt, account0);
+        _mintAndApprove(totalAmount, usdt, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
 
@@ -84,7 +84,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
             allocationAmounts
         );
 
-        _mintAndApproveBuyModule(inputAmount, usdt, account0);
+        _mintAndApprove(inputAmount, usdt, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
 
