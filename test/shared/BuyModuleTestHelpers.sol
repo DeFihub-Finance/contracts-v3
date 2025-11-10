@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Deployers} from "../utils/Deployers.sol";
 import {SwapHelper} from "../utils/SwapHelper.sol";
-import {PathUniswapV3, Hop} from "../utils/PathUniswapV3.sol";
+import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
