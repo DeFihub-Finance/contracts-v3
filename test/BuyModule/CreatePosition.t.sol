@@ -8,15 +8,11 @@ import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
 
 contract CreatePosition is Test, BuyModuleTestHelpers {
-    uint8 internal immutable MAX_INVESTMENTS = 20;
-
     function setUp() public {
         deployBaseContracts();
     }
 
     function test_fuzz_createPosition(uint[] memory allocatedAmounts) public {
-        vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= MAX_INVESTMENTS);
-
         (
             uint totalAmount,
             BuyPositionModule.Investment[] memory investments

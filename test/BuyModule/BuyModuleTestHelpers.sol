@@ -13,6 +13,9 @@ import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
 
 abstract contract BuyModuleTestHelpers is Test, Deployers {
+    /// Maximum number of investments in a buy position for fuzz testing
+    uint8 internal immutable MAX_INVESTMENTS = 20;
+
     /// @dev Fuzz helper to create a buy position with bounded allocated amounts
     /// @param inputToken Input token of the buy position
     /// @param allocatedAmounts Allocated amounts for each investment
@@ -84,7 +87,9 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         uint[] memory allocatedAmounts,
         TestERC20 inputToken
     ) internal view returns (uint[] memory) {
-        uint maxBound = inputToken == wbtc 
+        vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= MAX_INVESTMENTS);
+        
+        uint maxBound = inputToken == wbtc
             ? 10 * 1e8 // 10 WBTC
             : 1_000_000 ether;
 

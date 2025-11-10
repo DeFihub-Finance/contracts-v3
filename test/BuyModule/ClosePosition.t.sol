@@ -14,8 +14,6 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_fuzz_closePosition(uint[] memory allocatedAmounts) public {
-        vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= 20);
-
         uint tokenId = _createFuzzyBuyPosition(usdt, allocatedAmounts);
 
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
