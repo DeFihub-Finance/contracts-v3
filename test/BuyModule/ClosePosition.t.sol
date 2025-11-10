@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {Balances} from "../utils/Balances.sol";
-import {BuyModuleTestHelpers} from "../shared/BuyModuleTestHelpers.sol";
+import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
 
