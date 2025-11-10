@@ -148,8 +148,8 @@ abstract contract Deployers is Test {
     }
 
     function _deployAndInitLiquidityPools() internal {
-        uint ONE_BILLION_ETHER = 1_000_000_000 ether;
-        uint ONE_BILLION_WBTC = 1_000_000_000 * 10 ** wbtc.decimals();
+        uint ONE_TRILLION_ETHER = 1e12 ether;
+        uint ONE_TRILLION_WBTC = 1e12 * 10 ** wbtc.decimals();
 
         usdtWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
@@ -157,8 +157,8 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdt,
                 weth,
-                ONE_BILLION_ETHER,
-                ONE_BILLION_ETHER / Constants.WETH_PRICE,
+                ONE_TRILLION_ETHER,
+                ONE_TRILLION_ETHER / Constants.WETH_PRICE,
                 owner
             )
         );
@@ -169,8 +169,8 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdt,
                 wbtc,
-                ONE_BILLION_ETHER,
-                ONE_BILLION_WBTC / Constants.WBTC_PRICE,
+                ONE_TRILLION_ETHER,
+                ONE_TRILLION_WBTC / Constants.WBTC_PRICE,
                 owner
             )
         );
@@ -181,8 +181,8 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 weth,
                 wbtc,
-                ONE_BILLION_ETHER / Constants.WETH_PRICE,
-                ONE_BILLION_WBTC / Constants.WBTC_PRICE,
+                ONE_TRILLION_ETHER / Constants.WETH_PRICE,
+                ONE_TRILLION_WBTC / Constants.WBTC_PRICE,
                 owner
             )
         );
