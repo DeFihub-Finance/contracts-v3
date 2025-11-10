@@ -122,14 +122,14 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     function createPositionEth(
         InvestParams memory _params
     ) external payable returns (uint tokenId) {
-        if (address(_params.inputToken) != address(WETH))
-            revert InvalidInput();
-
         tokenId = _createToken();
 
         WETH.deposit{value: msg.value}();
 
-        _makeInvestments(tokenId, _params, msg.value);
+        _params.inputToken = IERC20(address(WETH));
+        _params.inputAmount = msg.value;
+
+        _makeInvestments(tokenId, _params);
     }
 
     function createPositionPermit(
@@ -151,7 +151,9 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
             _permit.s
         );
 
-        _makeInvestments(tokenId, _params, _pullToken(_params.inputToken, _params.inputAmount));
+        _params.inputAmount = _pullToken(_params.inputToken, _params.inputAmount);
+
+        _makeInvestments(tokenId, _params);
     }
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
@@ -161,15 +163,17 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
-        _makeInvestments(_tokenId, params, _pullToken(params.inputToken, params.inputAmount));
+        params.inputAmount = _pullToken(params.inputToken, params.inputAmount);
+
+        _makeInvestments(_tokenId, params);
     }
 
-    function _makeInvestments(uint _tokenId, InvestParams memory _params, uint amount) internal {
+    function _makeInvestments(uint _tokenId, InvestParams memory _params) internal {
         _setReferrer(_params.referrer);
 
         uint totalAmount = _collectFees(
             _params.inputToken,
-            amount,
+            _params.inputAmount,
             _params.strategyIdentifier
         );
         uint totalAllocatedAmount;
