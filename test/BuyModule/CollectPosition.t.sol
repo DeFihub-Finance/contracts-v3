@@ -13,7 +13,6 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         deployBaseContracts();
     }
 
-    /// @notice Fuzz test for collecting a buy position with varying investments
     function test_fuzz_collectPosition(uint[] memory allocatedAmounts) public {
         vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= 20);
 
@@ -24,8 +23,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        // Must be called right before collectPosition function
-        _expectEmitPositionClosedEvent(account0, tokenId);
+        _expectEmitBuyPositionClosedEvent(account0, account0, tokenId);
         buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
@@ -35,7 +33,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         for (uint i; i < availableTokens.length; ++i) {
             // Assert user received tokens
             assertEq(
-                userBalancesAfter[i] - userBalancesBefore[i], 
+                userBalancesAfter[i] - userBalancesBefore[i],
                 buyModuleBalancesBefore[i]
             );
         }
@@ -50,46 +48,5 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.expectRevert(BasePositionModule.Unauthorized.selector);
         buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
-    }
-
-    function _expectEmitPositionClosedEvent(address beneficiary, uint tokenId) internal {
-        vm.expectEmit(false, false, false, true, address(buyPositionModule));
-        emit BuyPositionModule.PositionClosed(
-            beneficiary,
-            beneficiary,
-            tokenId,
-            _getWithdrawnAmounts(buyPositionModule.getPositions(tokenId))
-        );
-    }
-
-    function _getWithdrawnAmounts(
-        BuyPositionModule.Position[] memory positions
-    ) internal pure returns (uint[] memory withdrawnAmounts) {
-        withdrawnAmounts = new uint[](positions.length);
-
-        for (uint i; i < positions.length; ++i) {
-            withdrawnAmounts[i] = positions[i].amount;
-        }
-    }
-
-    function _getBuyPositionClosedEvent(
-        Vm.Log[] memory logs
-    ) internal pure returns (address, address, uint, uint[] memory) {
-        Vm.Log memory log = _getEvent(logs, BuyPositionModule.PositionClosed.selector);
-
-        return abi.decode(log.data, (address, address, uint, uint[]));
-    }
-
-    function _getEvent(
-        Vm.Log[] memory logs,
-        bytes32 signature
-    ) internal pure returns (Vm.Log memory log) {
-        for (uint i; i < logs.length; ++i) {
-            if (logs[i].topics[0] == signature) {
-                return logs[i];
-            }
-        }
-
-        revert("Event not found");
     }
 }
