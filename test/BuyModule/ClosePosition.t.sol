@@ -39,6 +39,17 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
         }
     }
 
+    function test_closePositionAlreadyClosed_reverts_unauthorized() public {
+        uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
+
+        vm.startPrank(account0);
+
+        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+
+        vm.expectRevert(BasePositionModule.Unauthorized.selector);
+        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+    }
+
     function test_closePosition_reverts_notOwner() public {
         uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
 
