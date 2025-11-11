@@ -136,7 +136,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             poolAccruedQuotes[pool.performedSwaps + 1] = poolAccruedQuotes[pool.performedSwaps] + swapQuote;
 
             pool.performedSwaps += 1;
-            pool.nextSwapAmount -= pool.endingPositionDeduction[pool.performedSwaps + 1];
+            pool.nextSwapAmount -= pool.endingPositionDeduction[pool.performedSwaps];
             pool.lastSwapTimestamp = timestamp;
 
             emit Swap(swapParam.poolId, inputTokenAmount, outputTokenAmount);
@@ -192,7 +192,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             uint32 finalSwap = pool.performedSwaps + investment.swaps;
 
             pool.nextSwapAmount += amountPerSwap;
-            pool.endingPositionDeduction[finalSwap + 1] += amountPerSwap;
+            pool.endingPositionDeduction[finalSwap] += amountPerSwap;
 
             positions.push(
                 Position({
@@ -243,7 +243,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
 
             if (position.finalSwap > pool.performedSwaps) {
                 pool.nextSwapAmount -= position.amountPerSwap;
-                pool.endingPositionDeduction[position.finalSwap + 1] -= position.amountPerSwap;
+                pool.endingPositionDeduction[position.finalSwap] -= position.amountPerSwap;
             }
 
             position.lastUpdateSwap = pool.performedSwaps;
