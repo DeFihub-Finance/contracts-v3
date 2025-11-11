@@ -31,8 +31,9 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
     }
 
     mapping(uint => Position[]) internal _tokenToPositions;
-    mapping(uint => bool) internal _closedPositions;
+    mapping(uint => bool) internal _claimedPositions;
 
+    event PositionCollected(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
 
     error InvalidBasisPoints();
@@ -70,28 +71,26 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
     }
 
     function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
-        _claimTokens(_beneficiary, _tokenId);
+        emit PositionCollected(msg.sender, _beneficiary, _tokenId, _claimTokens(_beneficiary, _tokenId));
     }
 
     function _closePosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
-        _claimTokens(_beneficiary, _tokenId);
+        emit PositionClosed(msg.sender, _beneficiary, _tokenId, _claimTokens(_beneficiary, _tokenId));
     }
 
-    function _claimTokens(address _beneficiary, uint _tokenId) internal {
-        if (_closedPositions[_tokenId])
-            return;
-
-        _closedPositions[_tokenId] = true;
-
+    function _claimTokens(address _beneficiary, uint _tokenId) internal returns(uint[] memory withdrawnAmounts) {
         Position[] memory positions = _tokenToPositions[_tokenId];
-        uint[] memory withdrawnAmounts = new uint[](positions.length);
+        withdrawnAmounts = new uint[](positions.length);
+
+        if (_claimedPositions[_tokenId])
+            return withdrawnAmounts;
+
+        _claimedPositions[_tokenId] = true;
 
         for (uint i; i < positions.length; ++i) {
             Position memory position = positions[i];
             withdrawnAmounts[i] = position.amount;
             position.token.safeTransfer(_beneficiary, position.amount);
         }
-
-        emit PositionClosed(msg.sender, _beneficiary, _tokenId, withdrawnAmounts);
     }
 }
