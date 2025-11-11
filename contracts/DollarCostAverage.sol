@@ -279,8 +279,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
             ? _position.finalSwap
             : _pool.performedSwaps;
 
-        // @dev This means that the last interaction was happened before a new swap happened
-        // and the user already withdrawn all the output tokens
+        // @dev Triggers when the last interaction occurred before a new swap and the user already withdrawn all output tokens
         if (_position.lastUpdateSwap > swapToConsider)
             return 0;
 
