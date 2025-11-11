@@ -33,6 +33,7 @@ abstract contract Deployers is Test {
     TestERC20 public usdt;
     TestERC20 public wbtc;
     TestERC20[] public availableTokens;
+    mapping(address => uint24) public tokenPrices;
 
     // DeFihub contracts
     BuyPositionModule public buyPositionModule;
@@ -72,6 +73,9 @@ abstract contract Deployers is Test {
         usdt = new TestERC20(18);
 
         availableTokens = [usdt, wbtc, weth];
+        tokenPrices[address(usdt)] = Constants.USD_PRICE;
+        tokenPrices[address(wbtc)] = Constants.WBTC_PRICE;
+        tokenPrices[address(weth)] = Constants.WETH_PRICE;
     }
 
     /// @notice Deploys DeFihub modules
