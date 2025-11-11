@@ -10,9 +10,12 @@ import {BasePositionModule} from "./abstract/BasePositionModule.sol";
 import {BaseRewardModule} from "./abstract/BaseRewardModule.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
 import {IWETH} from "./interfaces/external/IWETH.sol";
+import {HubRouter} from "./libraries/HubRouter.sol";
+import {TokenArray} from "./libraries/TokenArray.sol";
 
 contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), BaseRewardModule, UseTreasury {
     using SafeERC20 for IERC20;
+    using TokenArray for IERC20[];
 
     struct Investment {
         // Where to invest the allocated funds
@@ -73,6 +76,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
     error InvalidInput();
+    error InsufficientOutputAmount();
 
     constructor(
         address _owner,
@@ -202,6 +206,51 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
         }
+    }
+
+    function closePositionSingleToken(
+        address _beneficiary,
+        uint _tokenId,
+        bytes memory _data,
+        IERC20 _outputToken,
+        uint _minOutput,
+        IERC20[] memory _tokens,
+        HubRouter.HubSwap[] memory _swaps
+    ) external onlyPositionOwner(_tokenId) {
+        _burn(_tokenId);
+
+        _tokens.validateUniqueAndSorted();
+
+        if (_tokens.length != _swaps.length)
+            revert InvalidInput();
+
+        uint[] memory initialTokenBalances = new uint[](_tokens.length);
+        uint initialOutputTokenBalance = _outputToken.balanceOf(address(this));
+
+        for (uint i; i < _tokens.length; ++i)
+            initialTokenBalances[i] = _tokens[i].balanceOf(address(this));
+
+        _closePosition(address(this), _tokenId, _data);
+
+        for (uint i; i < _tokens.length; ++i) {
+            IERC20 token = _tokens[i];
+
+            if (token == _outputToken)
+                continue;
+
+            HubRouter.HubSwap memory swap = _swaps[i];
+            uint balance = token.balanceOf(address(this)) - initialTokenBalances[i];
+
+            token.safeTransfer(address(swap.router), balance);
+            swap.router.execute(swap.commands, swap.inputs);
+        }
+
+        uint amountOut = _outputToken.balanceOf(address(this)) - initialOutputTokenBalance;
+
+        if (amountOut < _minOutput)
+            revert InsufficientOutputAmount();
+
+        _outputToken.safeTransfer(_beneficiary, amountOut);
     }
 
     function _closePosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
