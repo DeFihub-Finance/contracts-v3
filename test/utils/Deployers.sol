@@ -17,6 +17,7 @@ import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol
 import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
 import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
+import {IWETH} from "../../contracts/interfaces/external/IWETH.sol";
 
 contract Deployers is Test {
     // Accounts
@@ -73,6 +74,7 @@ contract Deployers is Test {
         strategyPositionModule = new StrategyPositionModule(
             owner,
             treasury,
+            IWETH(address(weth)),
             strategyFeeBps,
             strategistFeeSharingBps,
             referrerFeeSharingBps,

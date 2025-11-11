@@ -4,9 +4,11 @@ pragma solidity 0.8.30;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import {BasePositionModule} from "./abstract/BasePositionModule.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
+import {IWETH} from "./interfaces/external/IWETH.sol";
 
 contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), UseTreasury {
     using SafeERC20 for IERC20;
@@ -40,6 +42,18 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint deadline;
     }
 
+    struct ERC20Permit {
+        address owner;
+        address spender;
+        uint value;
+        uint deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    IWETH public immutable WETH;
+
     mapping(uint => Position[]) internal _tokenToPositions;
 
     /// @notice referred account => referrer account
@@ -65,6 +79,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     constructor(
         address _owner,
         address _treasury,
+        IWETH _weth,
         uint16 _protocolFeeBps,
         uint16 _strategistFeeBps,
         uint16 _referrerFeeBps,
@@ -72,6 +87,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) UseTreasury(_owner, _treasury) {
         _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
 
+        WETH = _weth;
         referralDuration = _referralDuration;
     }
 
@@ -102,7 +118,43 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         emit FeesUpdated(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
     }
 
-    // TODO add invest with permit and invest native
+    /// @dev _params.inputAmount is ignored, msg.value is used instead
+    function createPositionEth(
+        InvestParams memory _params
+    ) external payable returns (uint tokenId) {
+        tokenId = _createToken();
+
+        WETH.deposit{value: msg.value}();
+
+        _params.inputToken = IERC20(address(WETH));
+        _params.inputAmount = msg.value;
+
+        _makeInvestments(tokenId, _params);
+    }
+
+    function createPositionPermit(
+        InvestParams memory _params,
+        ERC20Permit memory _permit
+    ) external returns (uint tokenId) {
+        if (_permit.owner != msg.sender || _permit.spender != address(this))
+            revert Unauthorized();
+
+        tokenId = _createToken();
+
+        IERC20Permit(address(_params.inputToken)).permit(
+            _permit.owner,
+            _permit.spender,
+            _permit.value,
+            _permit.deadline,
+            _permit.v,
+            _permit.r,
+            _permit.s
+        );
+
+        _params.inputAmount = _pullToken(_params.inputToken, _params.inputAmount);
+
+        _makeInvestments(tokenId, _params);
+    }
 
     // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
@@ -111,21 +163,27 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     ) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
-        _setReferrer(params.referrer);
+        params.inputAmount = _pullToken(params.inputToken, params.inputAmount);
+
+        _makeInvestments(_tokenId, params);
+    }
+
+    function _makeInvestments(uint _tokenId, InvestParams memory _params) internal {
+        _setReferrer(_params.referrer);
 
         uint totalAmount = _collectFees(
-            params.inputToken,
-            _pullToken(params.inputToken, params.inputAmount),
-            params.strategyIdentifier
+            _params.inputToken,
+            _params.inputAmount,
+            _params.strategyIdentifier
         );
         uint totalAllocatedAmount;
 
-        for (uint i; i < params.investments.length; ++i) {
-            Investment memory investment = params.investments[i];
+        for (uint i; i < _params.investments.length; ++i) {
+            Investment memory investment = _params.investments[i];
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
+            _params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
 
             uint moduleTokenId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
 
