@@ -62,7 +62,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     mapping(address => bool) internal _investedBefore;
 
     // settings
-    uint16 internal constant MAX_TOTAL_FEE_BPS = 250; // 2.5%
+    uint16 internal constant MAX_TOTAL_FEE_BPS = 100; // 1%
     uint16 public protocolFeeBps;
     uint16 public strategistFeeBps;
     uint16 public referrerFeeBps;
