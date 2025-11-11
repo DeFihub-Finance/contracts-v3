@@ -7,10 +7,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import {BasePositionModule} from "./abstract/BasePositionModule.sol";
+import {BaseRewardModule} from "./abstract/BaseRewardModule.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
 import {IWETH} from "./interfaces/external/IWETH.sol";
 
-contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), UseTreasury {
+contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), BaseRewardModule, UseTreasury {
     using SafeERC20 for IERC20;
 
     struct Investment {
@@ -59,9 +60,6 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     /// @notice referred account => referrer account
     mapping(address => Referral) internal _referrals;
     mapping(address => bool) internal _investedBefore;
-
-    /// @notice user => token => rewards
-    mapping(address => mapping(IERC20 => uint)) public rewards;
 
     // settings
     uint16 internal constant MAX_TOTAL_FEE_BPS = 250; // 2.5%

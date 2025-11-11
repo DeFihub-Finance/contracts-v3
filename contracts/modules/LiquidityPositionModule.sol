@@ -8,10 +8,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {BasePositionModule} from "../abstract/BasePositionModule.sol";
+import {BaseRewardModule} from "../abstract/BaseRewardModule.sol";
 import {UseTreasury} from "../abstract/UseTreasury.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Position", "DHLP"), UseTreasury {
+contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Position", "DHLP"), BaseRewardModule, UseTreasury {
     using SafeERC20 for IERC20;
 
     struct Investment {
@@ -72,9 +73,6 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
 
     /// @notice Links a liquidity module position to multiple liquidity positions in decentralized exchanges
     mapping(uint => Position) internal _tokenToPositions;
-
-    /// @notice user => token => rewards
-    mapping(address => mapping(IERC20 => uint)) public rewards;
 
     uint16 public protocolPerformanceFeeBps;
 
