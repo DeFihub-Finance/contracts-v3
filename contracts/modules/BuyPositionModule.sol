@@ -79,11 +79,11 @@ contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP")
     }
 
     function _claimTokens(address _beneficiary, uint _tokenId) internal returns(uint[] memory withdrawnAmounts) {
+        if (_claimedPositions[_tokenId])
+            return new uint[](0);
+
         Position[] memory positions = _tokenToPositions[_tokenId];
         withdrawnAmounts = new uint[](positions.length);
-
-        if (_claimedPositions[_tokenId])
-            return withdrawnAmounts;
 
         _claimedPositions[_tokenId] = true;
 
