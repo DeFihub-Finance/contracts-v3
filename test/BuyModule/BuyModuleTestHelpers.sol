@@ -147,25 +147,6 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         );
     }
 
-    /// @dev Helper to assert a BuyModule's PositionClosed event will be emmited.
-    /// @param owner Owner of the position
-    /// @param beneficiary Account receiving the withdrawn funds
-    /// @param tokenId ID of the closed position
-    function _expectEmitBuyPositionClosedEvent(
-        address owner,
-        address beneficiary,
-        uint tokenId
-    ) internal {
-        // We dont care about topics 1, 2 and 3, only the data
-        vm.expectEmit(false, false, false, true, address(buyPositionModule));
-        emit BuyPositionModule.PositionClosed(
-            owner,
-            beneficiary,
-            tokenId,
-            _getBuyWithdrawalAmounts(tokenId)
-        );
-    }
-
     /// @dev Helper to get the withdrawal amounts of a buy position.
     /// @param tokenId ID of the buy position
     /// @return withdrawalAmounts Array of withdrawal amounts
