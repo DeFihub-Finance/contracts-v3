@@ -21,7 +21,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        _expectEmitBuyPositionClosedEvent(account0, account0, tokenId);
+        _expectEmitPositionCollected(tokenId, _getBuyWithdrawalAmounts(tokenId));
         buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
@@ -37,6 +37,39 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         }
     }
 
+    function test_collectPositionAlreadyCollected() public {
+        uint inputAmount = 100 ether;
+        uint[] memory allocatedAmounts = new uint[](1);
+
+        allocatedAmounts[0] = inputAmount;
+
+        (, BuyPositionModule.Investment[] memory investments) = _createBuyInvestments(usdt, allocatedAmounts);
+        uint tokenId = _createBuyPosition(inputAmount, usdt, investments);
+
+        vm.startPrank(account0);
+
+        _expectEmitPositionCollected(tokenId, _getBuyWithdrawalAmounts(tokenId));
+        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+
+        // Get user balances before collecting again
+        uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
+
+        _expectEmitPositionCollected(
+            tokenId,
+            new uint[](0) // No token to withdraw since already collected
+        );
+        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+
+        uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
+
+        vm.stopPrank();
+
+        for (uint i; i < availableTokens.length; ++i) {
+            // Assert user balances did not change
+            assertEq(userBalancesBefore[i], userBalancesAfter[i]);
+        }
+    }
+
     function test_collectPosition_reverts_notOwner() public {
         uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
 
@@ -46,5 +79,19 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.expectRevert(BasePositionModule.Unauthorized.selector);
         buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+    }
+
+    function _expectEmitPositionCollected(
+        uint tokenId,
+        uint[] memory withdrawalAmounts
+    ) internal {
+        // We dont care about topics 1, 2 and 3, only the data
+        vm.expectEmit(false, false, false, true, address(buyPositionModule));
+        emit BuyPositionModule.PositionCollected(
+            account0,
+            account0,
+            tokenId,
+            withdrawalAmounts
+        );
     }
 }

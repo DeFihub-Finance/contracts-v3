@@ -21,7 +21,15 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        _expectEmitBuyPositionClosedEvent(account0, account0, tokenId);
+        // We dont care about topics 1, 2 and 3, only the data
+        vm.expectEmit(false, false, false, true, address(buyPositionModule));
+        emit BuyPositionModule.PositionClosed(
+            account0,
+            account0,
+            tokenId,
+            _getBuyWithdrawalAmounts(tokenId)
+        );
+        
         buyPositionModule.closePosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
