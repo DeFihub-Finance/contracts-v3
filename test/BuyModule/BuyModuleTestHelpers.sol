@@ -161,7 +161,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         }
     }
 
-    /// @notice Normalizes an arbitrary number with intrinsic precision to ether.
+    /// @dev Normalizes an arbitrary number with intrinsic precision to ether.
     /// @param value The value to normalize
     /// @param decimals The decimals of the value
     /// @return The value normalized to 18 decimals
