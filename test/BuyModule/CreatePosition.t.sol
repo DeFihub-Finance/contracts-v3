@@ -29,10 +29,12 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
 
         for (uint i; i < positions.length; ++i) {
             address buyTokenAddress = address(positions[i].token);
+            
+            uint positionAmount = positions[i].amount;
+            uint positionValueUsd = positionAmount * tokenPrices[buyTokenAddress];
 
+            assertGt(positionAmount, 0);
             assertEq(buyTokenAddress, address(investments[i].token));
-
-            uint positionValueUsd = positions[i].amount * tokenPrices[buyTokenAddress];
 
             // Compare price impact values in USD, normalized with 18 decimals
             assertApproxEqRel(
