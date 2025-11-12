@@ -9,6 +9,9 @@ library TokenArray {
 
     // TODO test with arrays of length 0, 1, and more
     function validateUniqueAndSorted(IERC20[] memory _tokens) internal pure {
+        if (_tokens.length < 2)
+            return;
+
         IERC20 previousToken = _tokens[0];
 
         // TODO gasopt:
