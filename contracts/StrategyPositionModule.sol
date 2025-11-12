@@ -218,12 +218,12 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         IERC20[] memory _tokens,
         HubRouter.HubSwap[] memory _swaps
     ) external onlyPositionOwner(_tokenId) {
-        _burn(_tokenId);
+        if (_tokens.length != _swaps.length)
+            revert InvalidInput();
 
         _tokens.validateUniqueAndSorted();
 
-        if (_tokens.length != _swaps.length)
-            revert InvalidInput();
+        _burn(_tokenId);
 
         uint[] memory initialTokenBalances = new uint[](_tokens.length);
         uint initialOutputTokenBalance = _outputToken.balanceOf(address(this));
