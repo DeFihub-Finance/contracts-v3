@@ -24,7 +24,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         TestERC20 inputToken,
         uint[] memory allocatedAmounts
     ) internal returns (uint tokenId) {
-        _boundAllocatedAmounts(allocatedAmounts, inputToken);
+        _boundAllocatedAmounts(allocatedAmounts);
 
         (   
             uint totalAmount,
@@ -82,19 +82,17 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
 
     /// @dev Helper to bound allocated amounts within a reasonable range
     /// @param allocatedAmounts Allocated amounts to be bounded
-    /// @param inputToken Input token of the buy position
     function _boundAllocatedAmounts(
-        uint[] memory allocatedAmounts,
-        TestERC20 inputToken
+        uint[] memory allocatedAmounts
     ) internal view returns (uint[] memory) {
         vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= MAX_INVESTMENTS);
-        
-        uint maxBound = inputToken == wbtc
-            ? 10 * 1e8 // 10 WBTC
-            : 1_000_000 ether;
 
         for (uint i; i < allocatedAmounts.length; ++i) {
-            allocatedAmounts[i] = bound(allocatedAmounts[i], 100_000, maxBound);
+            allocatedAmounts[i] = bound(
+                allocatedAmounts[i],
+                1010, // Min USDC amount to buy 1 WBTC (USDC has less decimals)
+                1e6 * 10 ** usdc.decimals() // 1M USDC
+            );
         }
 
         return allocatedAmounts;
