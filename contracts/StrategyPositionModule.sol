@@ -243,9 +243,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
                 continue;
 
             HubRouter.HubSwap memory swap = _swaps[i];
-            uint balance = token.balanceOf(address(this)) - initialTokenBalances[i];
 
-            token.safeTransfer(address(swap.router), balance);
+            token.safeTransfer(address(swap.router), token.balanceOf(address(this)) - initialTokenBalances[i]);
             swap.router.execute(swap.commands, swap.inputs);
         }
 
