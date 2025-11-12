@@ -14,9 +14,6 @@ library TokenArray {
 
         IERC20 previousToken = _tokens[0];
 
-        // TODO gasopt:
-        // opt 1: starting from position 1 and not having to check for i > 0, having a second loop to get balances
-        // opt 2: starting from position 0 and checking for i > 0, get balances in same loop
         for (uint i = 1; i < _tokens.length; ++i) {
             IERC20 token = _tokens[i];
 
