@@ -14,7 +14,7 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_fuzz_closePosition(uint[] memory allocatedAmounts) public {
-        uint tokenId = _createFuzzyBuyPosition(usdt, allocatedAmounts);
+        uint tokenId = _createFuzzyBuyPosition(usdc, allocatedAmounts);
 
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
         uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
@@ -46,7 +46,7 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_closePositionAlreadyClosed_reverts_unauthorized() public {
-        uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
 
         vm.startPrank(account0);
 
@@ -57,7 +57,7 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_closePosition_reverts_notOwner() public {
-        uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
 
         tokenId += 1; // Ensure tokenId is not owned by account0
 

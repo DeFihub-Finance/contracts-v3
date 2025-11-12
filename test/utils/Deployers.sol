@@ -30,7 +30,7 @@ abstract contract Deployers is Test {
 
     // Tokens
     TestWETH public weth;
-    TestERC20 public usdt;
+    TestERC20 public usdc;
     TestERC20 public wbtc;
     TestERC20[] public availableTokens;
     mapping(address => uint24) public tokenPrices;
@@ -46,8 +46,8 @@ abstract contract Deployers is Test {
     IUniversalRouter public universalRouter;
     IUniswapV3Factory public factoryUniV3;
     INonfungiblePositionManager public positionManagerUniV3;
-    IUniswapV3Pool public usdtWethPool;
-    IUniswapV3Pool public usdtWbtcPool;
+    IUniswapV3Pool public usdcWethPool;
+    IUniswapV3Pool public usdcWbtcPool;
     IUniswapV3Pool public wethWbtcPool;
 
     // Fees
@@ -70,10 +70,10 @@ abstract contract Deployers is Test {
     function _deployTokens() internal {
         weth = new TestWETH();
         wbtc = new TestERC20(8);
-        usdt = new TestERC20(18);
+        usdc = new TestERC20(6);
 
-        availableTokens = [usdt, wbtc, weth];
-        tokenPrices[address(usdt)] = Constants.USD_PRICE;
+        availableTokens = [usdc, wbtc, weth];
+        tokenPrices[address(usdc)] = Constants.USD_PRICE;
         tokenPrices[address(wbtc)] = Constants.WBTC_PRICE;
         tokenPrices[address(weth)] = Constants.WETH_PRICE;
     }
@@ -153,27 +153,28 @@ abstract contract Deployers is Test {
 
     function _deployAndInitLiquidityPools() internal {
         uint ONE_TRILLION_ETHER = 1e12 ether;
+        uint ONE_TRILLION_USDC = 1e12 * 10 ** usdc.decimals();
         uint ONE_TRILLION_WBTC = 1e12 * 10 ** wbtc.decimals();
 
-        usdtWethPool = IUniswapV3Pool(
+        usdcWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
                 factoryUniV3,
                 positionManagerUniV3,
-                usdt,
+                usdc,
                 weth,
-                ONE_TRILLION_ETHER,
+                ONE_TRILLION_USDC,
                 ONE_TRILLION_ETHER / Constants.WETH_PRICE,
                 owner
             )
         );
 
-        usdtWbtcPool = IUniswapV3Pool(
+        usdcWbtcPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
                 factoryUniV3,
                 positionManagerUniV3,
-                usdt,
+                usdc,
                 wbtc,
-                ONE_TRILLION_ETHER,
+                ONE_TRILLION_USDC,
                 ONE_TRILLION_WBTC / Constants.WBTC_PRICE,
                 owner
             )

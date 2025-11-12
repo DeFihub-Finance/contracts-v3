@@ -16,9 +16,9 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         (
             uint totalAmount,
             BuyPositionModule.Investment[] memory investments
-        ) = _createBuyInvestments(usdt, _boundAllocatedAmounts(allocatedAmounts, usdt));
+        ) = _createBuyInvestments(usdc, _boundAllocatedAmounts(allocatedAmounts));
 
-        uint tokenId = _createBuyPosition(totalAmount, usdt, investments);
+        uint tokenId = _createBuyPosition(totalAmount, usdc, investments);
         
         BuyPositionModule.Position[] memory positions = buyPositionModule.getPositions(tokenId);
 
@@ -34,7 +34,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_createPosition_emptyInvestments() public {
-        uint tokenId = _createBuyPosition(0, usdt, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
 
         BuyPositionModule.Position[] memory positions = buyPositionModule.getPositions(tokenId);
 
@@ -54,16 +54,16 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         (
             uint totalAmount, 
             BuyPositionModule.Investment[] memory investments
-        ) = _createBuyInvestments(usdt, allocationAmounts);
+        ) = _createBuyInvestments(usdc, allocationAmounts);
 
         totalAmount -= 1; // Subtract to make it less than total allocations
 
-        _mintAndApprove(totalAmount, usdt, account0, address(buyPositionModule));
+        _mintAndApprove(totalAmount, usdc, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
 
         vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
-        buyPositionModule.createPosition(_getEncodedBuyInvestParams(totalAmount, usdt, investments));
+        buyPositionModule.createPosition(_getEncodedBuyInvestParams(totalAmount, usdc, investments));
     }
 
     function test_createPosition_reverts_totalAllocationsLessThanTolerance() public {
@@ -76,15 +76,15 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         }
         
         (, BuyPositionModule.Investment[] memory investments) = _createBuyInvestments(
-            usdt,
+            usdc,
             allocationAmounts
         );
 
-        _mintAndApprove(inputAmount, usdt, account0, address(buyPositionModule));
+        _mintAndApprove(inputAmount, usdc, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
 
         vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
-        buyPositionModule.createPosition(_getEncodedBuyInvestParams(inputAmount, usdt, investments));
+        buyPositionModule.createPosition(_getEncodedBuyInvestParams(inputAmount, usdc, investments));
     }
 }
