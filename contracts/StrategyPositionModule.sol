@@ -208,6 +208,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         }
     }
 
+    /// @notice _tokens and _swaps must be sorted, unique, and have the same length. There is no need to pass the output token in _tokens, even if is the output of a module.
     function closePositionSingleToken(
         address _beneficiary,
         uint _tokenId,
