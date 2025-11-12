@@ -169,8 +169,6 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         uint value,
         uint8 decimals
     ) internal pure returns (uint) {
-        return decimals == 18 
-            ? value 
-            : value * 1e18 / (10 ** decimals);
+        return decimals == 18 ? value : value * 10 ** (18 - decimals);
     }
 }
