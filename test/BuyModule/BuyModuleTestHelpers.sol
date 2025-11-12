@@ -90,7 +90,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         for (uint i; i < allocatedAmounts.length; ++i) {
             allocatedAmounts[i] = bound(
                 allocatedAmounts[i],
-                1010, // Min USDC amount to buy 1 WBTC (USDC has less decimals)
+                1e5, // $0,1 in USDC
                 1e6 * 10 ** usdc.decimals() // 1M USDC
             );
         }
@@ -159,5 +159,18 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         for (uint i; i < positions.length; ++i) {
             withdrawalAmounts[i] = positions[i].amount;
         }
+    }
+
+    /// @notice Normalizes an arbitrary number with intrinsic precision to ether.
+    /// @param value The value to normalize
+    /// @param decimals The decimals of the value
+    /// @return The value normalized to 18 decimals
+    function _normalizeToEther(
+        uint value,
+        uint8 decimals
+    ) internal pure returns (uint) {
+        return decimals == 18 
+            ? value 
+            : value * 1e18 / (10 ** decimals);
     }
 }

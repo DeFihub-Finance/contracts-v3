@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
+import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
 
@@ -27,9 +28,18 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         assertEq(buyPositionModule.ownerOf(tokenId), account0);
 
         for (uint i; i < positions.length; ++i) {
-            assertEq(address(positions[i].token), address(investments[i].token));
-            // TODO compare amounts in USD?
-            // assertApproxEqRel(positions[i].amount, investments[i].allocatedAmount, 0.01e18);
+            address buyTokenAddress = address(positions[i].token);
+
+            assertEq(buyTokenAddress, address(investments[i].token));
+
+            uint positionValueUsd = positions[i].amount * tokenPrices[buyTokenAddress];
+
+            // Compare price impact values in USD, normalized with 18 decimals
+            assertApproxEqRel(
+                _normalizeToEther(positionValueUsd, TestERC20(buyTokenAddress).decimals()),
+                _normalizeToEther(investments[i].allocatedAmount, usdc.decimals()),
+                0.05e18 // 5% price impact tolerance
+            );
         }
     }
 
