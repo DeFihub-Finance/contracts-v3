@@ -64,7 +64,6 @@ abstract contract BasePositionModule is ERC721 {
 
     function _collectPosition(address, uint, bytes memory) internal virtual;
 
-    // maybe call close position or burn
     function closePosition(
         address _beneficiary,
         uint _tokenId,
