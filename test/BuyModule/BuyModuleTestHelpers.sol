@@ -24,7 +24,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         TestERC20 inputToken,
         uint[] memory allocatedAmounts
     ) internal returns (uint tokenId) {
-        _boundAllocatedAmounts(allocatedAmounts);
+        _boundAllocatedAmounts(allocatedAmounts, inputToken);
 
         (   
             uint totalAmount,
@@ -82,16 +82,23 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
 
     /// @dev Helper to bound allocated amounts within a reasonable range
     /// @param allocatedAmounts Allocated amounts to be bounded
+    /// @param inputToken Input token of the buy position
     function _boundAllocatedAmounts(
-        uint[] memory allocatedAmounts
+        uint[] memory allocatedAmounts,
+        TestERC20 inputToken
     ) internal view returns (uint[] memory) {
         vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= MAX_INVESTMENTS);
+
+        uint priceAdjusted = _normalizeToEther(
+            tokenPrices[address(inputToken)],
+            inputToken.decimals()
+        );
 
         for (uint i; i < allocatedAmounts.length; ++i) {
             allocatedAmounts[i] = bound(
                 allocatedAmounts[i],
-                1e5, // $0,1 in USDC
-                1e6 * 10 ** usdc.decimals() // 1M USDC
+                0.01e18 / priceAdjusted, // $0.01 in input token amount
+                1_000_000e18 / priceAdjusted // $1M in input token amount
             );
         }
 

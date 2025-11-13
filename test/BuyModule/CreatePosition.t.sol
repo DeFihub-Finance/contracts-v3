@@ -17,7 +17,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         (
             uint totalAmount,
             BuyPositionModule.Investment[] memory investments
-        ) = _createBuyInvestments(usdc, _boundAllocatedAmounts(allocatedAmounts));
+        ) = _createBuyInvestments(usdc, _boundAllocatedAmounts(allocatedAmounts, usdc));
 
         uint tokenId = _createBuyPosition(totalAmount, usdc, investments);
         
