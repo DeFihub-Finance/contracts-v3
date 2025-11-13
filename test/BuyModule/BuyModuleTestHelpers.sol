@@ -14,7 +14,7 @@ import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.so
 
 abstract contract BuyModuleTestHelpers is Test, Deployers {
     /// Maximum number of investments in a buy position for fuzz testing
-    uint8 internal immutable MAX_INVESTMENTS = 20;
+    uint8 internal constant MAX_INVESTMENTS = 20;
 
     /// @dev Fuzz helper to create a buy position with bounded allocated amounts
     /// @param inputToken Input token of the buy position
