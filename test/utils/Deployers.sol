@@ -69,7 +69,7 @@ abstract contract Deployers is Test {
     /// @notice Deploys test tokens
     function _deployTokens() internal {
         weth = new TestWETH();
-        wbtc = new TestERC20(8);
+        wbtc = new TestERC20(18);
         usdc = new TestERC20(6);
 
         availableTokens = [usdc, wbtc, weth];
@@ -154,7 +154,6 @@ abstract contract Deployers is Test {
     function _deployAndInitLiquidityPools() internal {
         uint ONE_TRILLION_ETHER = 1e12 ether;
         uint ONE_TRILLION_USDC = 1e12 * 10 ** usdc.decimals();
-        uint ONE_TRILLION_WBTC = 1e12 * 10 ** wbtc.decimals();
 
         usdcWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
@@ -175,7 +174,7 @@ abstract contract Deployers is Test {
                 usdc,
                 wbtc,
                 ONE_TRILLION_USDC,
-                ONE_TRILLION_WBTC / Constants.WBTC_PRICE,
+                ONE_TRILLION_ETHER / Constants.WBTC_PRICE,
                 owner
             )
         );
@@ -187,7 +186,7 @@ abstract contract Deployers is Test {
                 weth,
                 wbtc,
                 ONE_TRILLION_ETHER / Constants.WETH_PRICE,
-                ONE_TRILLION_WBTC / Constants.WBTC_PRICE,
+                ONE_TRILLION_ETHER / Constants.WBTC_PRICE,
                 owner
             )
         );
