@@ -2,9 +2,10 @@
 pragma solidity 0.8.30;
 
 import {TestERC20} from "./TestERC20.sol";
+import {TokenPrices} from "./TokenPrices.sol";
 
 contract TestWETH is TestERC20 {
-    constructor() TestERC20(18) {}
+    constructor(TokenPrices tokenPrices_) TestERC20(18, tokenPrices_) {}
 
     function deposit() external payable {
         depositTo(msg.sender);
