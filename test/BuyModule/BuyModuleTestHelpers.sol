@@ -7,7 +7,7 @@ import {Constants} from "../utils/Constants.sol";
 import {Deployers} from "../utils/Deployers.sol";
 import {SwapHelper} from "../utils/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
-import {TestERC20} from "../../contracts/test/TestERC20.sol";
+import {TestERC20} from "../utils/TestERC20.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
@@ -26,7 +26,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     ) internal returns (uint tokenId) {
         _boundAllocatedAmounts(allocatedAmounts, inputToken);
 
-        (   
+        (
             uint totalAmount,
             BuyPositionModule.Investment[] memory investments
         ) = _createBuyInvestments(inputToken, allocatedAmounts);
@@ -47,7 +47,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         _mintAndApprove(inputAmount, inputToken, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
-        
+
         tokenId = buyPositionModule.createPosition(
             _getEncodedBuyInvestParams(inputAmount, inputToken, investments)
         );
@@ -89,16 +89,11 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     ) internal view returns (uint[] memory) {
         vm.assume(allocatedAmounts.length > 0 && allocatedAmounts.length <= MAX_INVESTMENTS);
 
-        uint priceAdjusted = _normalizeToEther(
-            tokenPrices[address(inputToken)],
-            inputToken.decimals()
-        );
-
         for (uint i; i < allocatedAmounts.length; ++i) {
             allocatedAmounts[i] = bound(
                 allocatedAmounts[i],
-                0.01e18 / priceAdjusted, // $0.01 in input token amount
-                1_000_000e18 / priceAdjusted // $1M in input token amount
+                inputToken.usdToAmount(0.01 ether), // $0.01 in input token amount
+                inputToken.usdToAmount(1_000_000 ether) // $1M in input token amount
             );
         }
 
