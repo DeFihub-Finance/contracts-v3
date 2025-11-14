@@ -155,7 +155,7 @@ abstract contract Deployers is Test {
     }
 
     function _deployAndInitLiquidityPools() internal {
-        uint ONE_BILLION = 1_000_000_000 ether;
+        uint AMOUNT_USD_PER_TOKEN = 100_000_000_000 ether;
 
         usdcWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
@@ -163,7 +163,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdc,
                 weth,
-                ONE_BILLION,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
@@ -174,7 +174,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdc,
                 wbtc,
-                ONE_BILLION,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
@@ -185,7 +185,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 weth,
                 wbtc,
-                ONE_BILLION,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
