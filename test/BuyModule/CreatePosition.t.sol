@@ -30,14 +30,14 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
 
         for (uint i; i < positions.length; ++i) {
             BuyPositionModule.Position memory position = positions[i];
-            address buyTokenAddress = address(position.token);
+            address outputTokenAddress = address(position.token);
 
             assertGt(position.amount, 0);
-            assertEq(buyTokenAddress, address(investments[i].token));
+            assertEq(outputTokenAddress, address(investments[i].token));
 
             // Compare price impact values in USD, normalized with 18 decimals
             assertApproxEqRel(
-                TestERC20(buyTokenAddress).amountToUsd(position.amount),
+                TestERC20(outputTokenAddress).amountToUsd(position.amount),
                 TestERC20(usdc).amountToUsd(investments[i].allocatedAmount),
                 0.05 ether // 5% price impact tolerance
             );

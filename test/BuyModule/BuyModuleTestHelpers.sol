@@ -162,15 +162,4 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
             withdrawalAmounts[i] = positions[i].amount;
         }
     }
-
-    /// @dev Normalizes an arbitrary number with intrinsic precision to ether.
-    /// @param value The value to normalize
-    /// @param decimals The decimals of the value
-    /// @return The value normalized to 18 decimals
-    function _normalizeToEther(
-        uint value,
-        uint8 decimals
-    ) internal pure returns (uint) {
-        return decimals == 18 ? value : value * 10 ** (18 - decimals);
-    }
 }
