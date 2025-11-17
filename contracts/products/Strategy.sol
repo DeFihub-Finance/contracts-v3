@@ -6,12 +6,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import {IWETH} from "../../external/interfaces/IWETH.sol";
 
 import {UsePosition} from "../abstract/UsePosition.sol";
 import {UseReferral} from "../abstract/UseReferral.sol";
 import {UseReward} from "../abstract/UseReward.sol";
 import {UseTreasury} from "../abstract/UseTreasury.sol";
-import {IWETH} from "../interfaces/external/IWETH.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 import {TokenArray} from "../libraries/TokenArray.sol";
 

@@ -15,9 +15,9 @@ import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
 import {Strategy} from "../../contracts/products/Strategy.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
-import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
-import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
-import {IWETH} from "../../contracts/interfaces/external/IWETH.sol";
+import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
+import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
+import {IWETH} from "../../external/interfaces/IWETH.sol";
 
 contract Deployers is Test {
     // Accounts

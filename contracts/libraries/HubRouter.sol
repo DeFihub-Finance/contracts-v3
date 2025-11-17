@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IUniversalRouter} from "../interfaces/external/IUniversalRouter.sol";
+import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 
 library HubRouter {
     using SafeERC20 for IERC20;

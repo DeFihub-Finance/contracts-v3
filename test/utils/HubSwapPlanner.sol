@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
-import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
+import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 
 library HubSwapPlanner {
     function init(

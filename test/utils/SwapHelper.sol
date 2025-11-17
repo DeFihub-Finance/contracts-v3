@@ -8,7 +8,7 @@ import {Path} from "./PathUniswapV3.sol";
 import {Constants} from "./Constants.sol";
 import {HubSwapPlanner} from "./HubSwapPlanner.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
-import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
+import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 
 library SwapHelper {
     using HubSwapPlanner for HubRouter.HubSwap;
