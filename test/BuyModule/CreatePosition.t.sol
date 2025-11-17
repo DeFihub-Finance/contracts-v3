@@ -3,8 +3,6 @@ pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
