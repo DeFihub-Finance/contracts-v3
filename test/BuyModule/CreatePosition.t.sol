@@ -36,7 +36,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
             // Compare price impact values in USD, normalized with 18 decimals
             assertApproxEqRel(
                 TestERC20(outputTokenAddress).amountToUsd(position.amount),
-                TestERC20(usdc).amountToUsd(investments[i].allocatedAmount),
+                usdc.amountToUsd(investments[i].allocatedAmount),
                 0.05 ether // 5% price impact tolerance
             );
         }
