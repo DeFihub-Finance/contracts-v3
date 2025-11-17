@@ -6,7 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-abstract contract BasePositionModule is ERC721 {
+abstract contract UsePosition is ERC721 {
     using SafeERC20 for IERC20;
 
     struct StrategyIdentifier {

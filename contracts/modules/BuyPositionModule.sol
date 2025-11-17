@@ -5,10 +5,10 @@ pragma solidity 0.8.30;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {BasePositionModule} from "../abstract/BasePositionModule.sol";
+import {UsePosition} from "../abstract/UsePosition.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract BuyPositionModule is BasePositionModule("DeFihub Buy Position", "DHBP") {
+contract BuyPositionModule is UsePosition("DeFihub Buy Position", "DHBP") {
     using SafeERC20 for IERC20;
 
     struct Investment {

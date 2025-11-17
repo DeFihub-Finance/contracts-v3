@@ -2,24 +2,26 @@
 
 pragma solidity 0.8.30;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-import {BasePositionModule} from "./abstract/BasePositionModule.sol";
-import {BaseRewardModule} from "./abstract/BaseRewardModule.sol";
+import {UsePosition} from "./abstract/UsePosition.sol";
+import {UseReferral} from "./abstract/UseReferral.sol";
+import {UseReward} from "./abstract/UseReward.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
 import {IWETH} from "./interfaces/external/IWETH.sol";
 import {HubRouter} from "./libraries/HubRouter.sol";
 import {TokenArray} from "./libraries/TokenArray.sol";
 
-contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), BaseRewardModule, UseTreasury {
+contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward, UseReferral, UseTreasury {
     using SafeERC20 for IERC20;
     using TokenArray for IERC20[];
 
     struct Investment {
         // Where to invest the allocated funds
-        address module;
+        UsePosition module;
         // The portion of the deposited balance allocated for this specific investment module
         uint allocatedAmount;
         // Encoded data specific to the investment module
@@ -37,13 +39,8 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
     }
 
     struct Position {
-        address moduleAddress;
+        UsePosition module;
         uint moduleTokenId;
-    }
-
-    struct Referral {
-        address referrer;
-        uint deadline;
     }
 
     struct ERC20Permit {
@@ -60,20 +57,14 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
     mapping(uint => Position[]) internal _tokenToPositions;
 
-    /// @notice referred account => referrer account
-    mapping(address => Referral) internal _referrals;
-    mapping(address => bool) internal _investedBefore;
-
     // settings
     uint16 internal constant MAX_TOTAL_FEE_BPS = 100; // 1%
     uint16 public protocolFeeBps;
     uint16 public strategistFeeBps;
     uint16 public referrerFeeBps;
-    uint public referralDuration;
 
     event FeesUpdated(uint16 protocolFeeBps, uint16 strategistFeeBps, uint16 referrerFeeBps);
     event FeeDistributed(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
-    event ReferralLinked(address referredAccount, address referrerAccount, uint deadline);
 
     error InvalidInput();
     error InsufficientOutputAmount();
@@ -86,11 +77,10 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint16 _strategistFeeBps,
         uint16 _referrerFeeBps,
         uint _referralDuration
-    ) UseTreasury(_owner, _treasury) {
+    ) UseTreasury(_treasury) UseReferral(_referralDuration) Ownable(_owner) {
         _setFees(_protocolFeeBps, _strategistFeeBps, _referrerFeeBps);
 
         WETH = _weth;
-        referralDuration = _referralDuration;
     }
 
     function getPositions(uint _tokenId) external view returns (Position[] memory) {
@@ -185,13 +175,12 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            _params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
-
-            uint moduleTokenId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
+            // this is easily exploited by not consuming tokens in the module
+            _params.inputToken.safeIncreaseAllowance(address(investment.module), investment.allocatedAmount);
 
             _tokenToPositions[_tokenId].push(Position({
-                moduleAddress: investment.module,
-                moduleTokenId: moduleTokenId
+                module: investment.module,
+                moduleTokenId: investment.module.createPosition(investment.encodedParams)
             }));
         }
 
@@ -204,7 +193,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
+            position.module.collectPosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
@@ -262,7 +251,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.moduleTokenId, data[i]);
+            position.module.closePosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
@@ -271,7 +260,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         uint _inputAmount,
         StrategyIdentifier memory _strategy
     ) internal returns (uint remainingAmount) {
-        address referrer = _getReferrer(msg.sender);
+        address referrer = getReferrer(msg.sender);
         bool hasReferrer = referrer != address(0);
 
         remainingAmount = _inputAmount;
@@ -295,32 +284,5 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         rewards[_getTreasury()][_token] += protocolFee;
         remainingAmount -= protocolFee;
         emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);
-    }
-
-    function _setReferrer(address _referrer) internal virtual {
-        // return if user is not a new investor
-        if (_investedBefore[msg.sender])
-            return;
-
-        _investedBefore[msg.sender] = true;
-
-        // ignores zero address and self-referral
-        if (_referrer == address(0) || _referrer == msg.sender)
-            return;
-
-        uint deadline = block.timestamp + referralDuration;
-
-        _referrals[msg.sender] = Referral({
-            referrer: _referrer,
-            deadline: deadline
-        });
-
-        emit ReferralLinked(msg.sender, _referrer, deadline);
-    }
-
-    function _getReferrer(address _user) internal view returns (address) {
-        Referral memory referral = _referrals[_user];
-
-        return block.timestamp > referral.deadline ? address(0) : referral.referrer;
     }
 }

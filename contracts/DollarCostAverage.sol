@@ -2,14 +2,15 @@
 
 pragma solidity 0.8.30;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {HubRouter} from "./libraries/HubRouter.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
-import {BasePositionModule} from "./abstract/BasePositionModule.sol";
+import {UsePosition} from "./abstract/UsePosition.sol";
 
-contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP"), UseTreasury {
+contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), UseTreasury {
     using SafeERC20 for IERC20;
 
     struct PoolIdentifier {
@@ -92,7 +93,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         address _treasury,
         address _swapper,
         uint16 _swapFeeBps
-    ) UseTreasury(_owner, _treasury) {
+    ) UseTreasury(_treasury) Ownable(_owner) {
         _setSwapper(_swapper);
         _setSwapFeeBps(_swapFeeBps);
     }
