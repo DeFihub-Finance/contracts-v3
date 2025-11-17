@@ -21,7 +21,7 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
 
     struct Investment {
         // Where to invest the allocated funds
-        address module;
+        UsePosition module;
         // The portion of the deposited balance allocated for this specific investment module
         uint allocatedAmount;
         // Encoded data specific to the investment module
@@ -39,7 +39,7 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
     }
 
     struct Position {
-        address moduleAddress;
+        UsePosition module;
         uint moduleTokenId;
     }
 
@@ -175,12 +175,12 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            _params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
+            _params.inputToken.safeIncreaseAllowance(address(investment.module), investment.allocatedAmount);
 
-            uint moduleTokenId = UsePosition(investment.module).createPosition(investment.encodedParams);
+            uint moduleTokenId = investment.module.createPosition(investment.encodedParams);
 
             _tokenToPositions[_tokenId].push(Position({
-                moduleAddress: investment.module,
+                module: investment.module,
                 moduleTokenId: moduleTokenId
             }));
         }
@@ -194,7 +194,7 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            UsePosition(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
+            position.module.collectPosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
@@ -252,7 +252,7 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            UsePosition(position.moduleAddress).closePosition(_beneficiary, position.moduleTokenId, data[i]);
+            position.module.closePosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
