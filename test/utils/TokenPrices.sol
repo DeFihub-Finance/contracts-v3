@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.30;
 
-import {TestERC20} from "./TestERC20.sol";
-
 contract TokenPrices {
     mapping(address => uint) internal _prices;
 
