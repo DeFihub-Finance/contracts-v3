@@ -175,13 +175,12 @@ contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHS
 
             totalAllocatedAmount += investment.allocatedAmount;
 
+            // this is easily exploited by not consuming tokens in the module
             _params.inputToken.safeIncreaseAllowance(address(investment.module), investment.allocatedAmount);
-
-            uint moduleTokenId = investment.module.createPosition(investment.encodedParams);
 
             _tokenToPositions[_tokenId].push(Position({
                 module: investment.module,
-                moduleTokenId: moduleTokenId
+                moduleTokenId: investment.module.createPosition(investment.encodedParams)
             }));
         }
 
