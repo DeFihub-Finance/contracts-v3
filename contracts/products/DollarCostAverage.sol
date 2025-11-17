@@ -6,9 +6,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {HubRouter} from "./libraries/HubRouter.sol";
-import {UseTreasury} from "./abstract/UseTreasury.sol";
-import {UsePosition} from "./abstract/UsePosition.sol";
+import {UseTreasury} from "../abstract/UseTreasury.sol";
+import {UsePosition} from "../abstract/UsePosition.sol";
+import {HubRouter} from "../libraries/HubRouter.sol";
 
 contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), UseTreasury {
     using SafeERC20 for IERC20;

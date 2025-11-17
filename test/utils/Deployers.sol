@@ -13,8 +13,8 @@ import {Constants} from "./Constants.sol";
 import {UniswapV3Helper} from "./UniswapV3Helper.sol";
 import {TestWETH} from "../../contracts/test/TestWETH.sol";
 import {TestERC20} from "../../contracts/test/TestERC20.sol";
-import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
-import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
+import {Strategy} from "../../contracts/products/Strategy.sol";
+import {Liquidity} from "../../contracts/products/Liquidity.sol";
 import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
 import {IWETH} from "../../contracts/interfaces/external/IWETH.sol";
@@ -33,8 +33,8 @@ contract Deployers is Test {
     TestERC20 public wbtc;
 
     // DeFihub contracts
-    StrategyPositionModule public strategyPositionModule;
-    LiquidityPositionModule public liquidityPositionModule;
+    Strategy public strategyPositionModule;
+    Liquidity public liquidityPositionModule;
 
     // External contracts
     IQuoter public quoterUniV3;
@@ -71,7 +71,7 @@ contract Deployers is Test {
 
     /// @notice Deploys DeFihub modules
     function deployHubModules() internal {
-        strategyPositionModule = new StrategyPositionModule(
+        strategyPositionModule = new Strategy(
             owner,
             treasury,
             IWETH(address(weth)),
@@ -81,7 +81,7 @@ contract Deployers is Test {
             24 hours // Referral duration
         );
 
-        liquidityPositionModule = new LiquidityPositionModule(
+        liquidityPositionModule = new Liquidity(
             owner,
             treasury,
             strategistFeeSharingBps 
