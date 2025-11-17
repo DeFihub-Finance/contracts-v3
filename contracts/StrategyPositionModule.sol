@@ -7,15 +7,15 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-import {BasePositionModule} from "./abstract/BasePositionModule.sol";
-import {BaseRewardModule} from "./abstract/BaseRewardModule.sol";
+import {UsePosition} from "./abstract/UsePosition.sol";
 import {UseReferral} from "./abstract/UseReferral.sol";
+import {UseReward} from "./abstract/UseReward.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
 import {IWETH} from "./interfaces/external/IWETH.sol";
 import {HubRouter} from "./libraries/HubRouter.sol";
 import {TokenArray} from "./libraries/TokenArray.sol";
 
-contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position", "DHSP"), BaseRewardModule, UseReferral, UseTreasury {
+contract StrategyPositionModule is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward, UseReferral, UseTreasury {
     using SafeERC20 for IERC20;
     using TokenArray for IERC20[];
 
@@ -177,7 +177,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
 
             _params.inputToken.safeIncreaseAllowance(investment.module, investment.allocatedAmount);
 
-            uint moduleTokenId = BasePositionModule(investment.module).createPosition(investment.encodedParams);
+            uint moduleTokenId = UsePosition(investment.module).createPosition(investment.encodedParams);
 
             _tokenToPositions[_tokenId].push(Position({
                 moduleAddress: investment.module,
@@ -194,7 +194,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
+            UsePosition(position.moduleAddress).collectPosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 
@@ -252,7 +252,7 @@ contract StrategyPositionModule is BasePositionModule("DeFihub Strategy Position
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
-            BasePositionModule(position.moduleAddress).closePosition(_beneficiary, position.moduleTokenId, data[i]);
+            UsePosition(position.moduleAddress).closePosition(_beneficiary, position.moduleTokenId, data[i]);
         }
     }
 

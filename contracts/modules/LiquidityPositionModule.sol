@@ -7,12 +7,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
-import {BasePositionModule} from "../abstract/BasePositionModule.sol";
-import {BaseRewardModule} from "../abstract/BaseRewardModule.sol";
+import {UsePosition} from "../abstract/UsePosition.sol";
+import {UseReward} from "../abstract/UseReward.sol";
 import {UseTreasury} from "../abstract/UseTreasury.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Position", "DHLP"), BaseRewardModule, UseTreasury {
+contract LiquidityPositionModule is UsePosition("DeFihub Liquidity Position", "DHLP"), UseReward, UseTreasury {
     using SafeERC20 for IERC20;
 
     struct Investment {

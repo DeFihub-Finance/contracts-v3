@@ -8,9 +8,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {HubRouter} from "./libraries/HubRouter.sol";
 import {UseTreasury} from "./abstract/UseTreasury.sol";
-import {BasePositionModule} from "./abstract/BasePositionModule.sol";
+import {UsePosition} from "./abstract/UsePosition.sol";
 
-contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP"), UseTreasury {
+contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), UseTreasury {
     using SafeERC20 for IERC20;
 
     struct PoolIdentifier {
