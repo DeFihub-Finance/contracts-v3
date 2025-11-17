@@ -11,8 +11,9 @@ import {RouterParameters} from "@uniswap/universal-router/contracts/types/Router
 
 import {Constants} from "./Constants.sol";
 import {UniswapV3Helper} from "./UniswapV3Helper.sol";
-import {TestWETH} from "../../contracts/test/TestWETH.sol";
-import {TestERC20} from "../../contracts/test/TestERC20.sol";
+import {TestWETH} from "./TestWETH.sol";
+import {TestERC20} from "./TestERC20.sol";
+import {TokenPrices} from "./TokenPrices.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
 import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
@@ -33,7 +34,6 @@ abstract contract Deployers is Test {
     TestERC20 public usdc;
     TestERC20 public wbtc;
     TestERC20[] public availableTokens;
-    mapping(address => uint24) public tokenPrices;
 
     // DeFihub contracts
     BuyPositionModule public buyPositionModule;
@@ -68,14 +68,17 @@ abstract contract Deployers is Test {
 
     /// @notice Deploys test tokens
     function _deployTokens() internal {
-        weth = new TestWETH();
-        wbtc = new TestERC20(18);
-        usdc = new TestERC20(6);
+        TokenPrices tokenPrices = new TokenPrices();
+
+        weth = new TestWETH(tokenPrices);
+        wbtc = new TestERC20(18, tokenPrices);
+        usdc = new TestERC20(6, tokenPrices);
 
         availableTokens = [usdc, wbtc, weth];
-        tokenPrices[address(usdc)] = Constants.USD_PRICE;
-        tokenPrices[address(wbtc)] = Constants.WBTC_PRICE;
-        tokenPrices[address(weth)] = Constants.WETH_PRICE;
+
+        tokenPrices.setPrice(address(usdc), Constants.USD_PRICE);
+        tokenPrices.setPrice(address(wbtc), Constants.WBTC_PRICE);
+        tokenPrices.setPrice(address(weth), Constants.WETH_PRICE);
     }
 
     /// @notice Deploys DeFihub modules
@@ -152,8 +155,7 @@ abstract contract Deployers is Test {
     }
 
     function _deployAndInitLiquidityPools() internal {
-        uint ONE_TRILLION_ETHER = 1e12 ether;
-        uint ONE_TRILLION_USDC = 1e12 * 10 ** usdc.decimals();
+        uint AMOUNT_USD_PER_TOKEN = 100_000_000_000 ether;
 
         usdcWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
@@ -161,8 +163,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdc,
                 weth,
-                ONE_TRILLION_USDC,
-                ONE_TRILLION_ETHER / Constants.WETH_PRICE,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
@@ -173,8 +174,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 usdc,
                 wbtc,
-                ONE_TRILLION_USDC,
-                ONE_TRILLION_ETHER / Constants.WBTC_PRICE,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
@@ -185,8 +185,7 @@ abstract contract Deployers is Test {
                 positionManagerUniV3,
                 weth,
                 wbtc,
-                ONE_TRILLION_ETHER / Constants.WETH_PRICE,
-                ONE_TRILLION_ETHER / Constants.WBTC_PRICE,
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );

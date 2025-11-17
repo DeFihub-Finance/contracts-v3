@@ -7,7 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 import {Constants} from "../utils/Constants.sol";
-import {TestERC20} from "../../contracts/test/TestERC20.sol";
+import {TestERC20} from "./TestERC20.sol";
 import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
 
 library UniswapV3Helper {
@@ -18,16 +18,14 @@ library UniswapV3Helper {
         INonfungiblePositionManager positionManager,
         TestERC20 tokenA,
         TestERC20 tokenB,
-        uint amountA,
-        uint amountB,
+        uint amountUsdPerToken,
         address to
     ) internal returns (address poolAddress) {
         (TestERC20 token0, TestERC20 token1) = sortTokens(tokenA, tokenB);
         (address addr0, address addr1) = (address(token0), address(token1));
 
-        (uint amount0, uint amount1) = token0 == tokenA
-            ? (amountA, amountB)
-            : (amountB, amountA);
+        uint amount0 = token0.usdToAmount(amountUsdPerToken);
+        uint amount1 = token1.usdToAmount(amountUsdPerToken);
 
         poolAddress = factory.getPool(addr0, addr1, Constants.FEE_MEDIUM);
 
