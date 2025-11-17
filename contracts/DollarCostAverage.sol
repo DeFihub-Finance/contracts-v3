@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.30;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -92,7 +93,7 @@ contract DollarCostAverage is BasePositionModule("DeFihub DCA Position", "DHDCAP
         address _treasury,
         address _swapper,
         uint16 _swapFeeBps
-    ) UseTreasury(_owner, _treasury) {
+    ) UseTreasury(_treasury) Ownable(_owner) {
         _setSwapper(_swapper);
         _setSwapFeeBps(_swapFeeBps);
     }

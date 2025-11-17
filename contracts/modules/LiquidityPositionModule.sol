@@ -98,7 +98,7 @@ contract LiquidityPositionModule is BasePositionModule("DeFihub Liquidity Positi
         address _owner,
         address _treasury,
         uint16 _newStrategistFeeSharingBps
-    ) UseTreasury(_owner, _treasury) {
+    ) UseTreasury(_treasury) Ownable(_owner) {
         _setProtocolPerformanceFee(_newStrategistFeeSharingBps);
     }
 

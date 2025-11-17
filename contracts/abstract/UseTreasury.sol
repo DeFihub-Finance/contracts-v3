@@ -11,7 +11,7 @@ abstract contract UseTreasury is Ownable {
 
     error InvalidZeroAddress();
 
-    constructor(address _owner, address _newTreasury) Ownable(_owner) {
+    constructor(address _newTreasury) {
         _setTreasury(_newTreasury);
     }
 
