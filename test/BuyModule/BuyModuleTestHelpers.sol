@@ -49,7 +49,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         vm.startPrank(account0);
 
         tokenId = buyPositionModule.createPosition(
-            _getEncodedBuyInvestParams(inputAmount, inputToken, investments)
+            _encodeBuyInvestParams(inputAmount, inputToken, investments)
         );
 
         vm.stopPrank();
@@ -105,7 +105,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     /// @param _inputToken Input token of the buy position
     /// @param _investments Investments of the buy position
     /// @return Bytes of the encoded invest params
-    function _getEncodedBuyInvestParams(
+    function _encodeBuyInvestParams(
         uint _inputAmount,
         TestERC20 _inputToken,
         BuyPositionModule.Investment[] memory _investments
@@ -158,8 +158,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
 
         withdrawalAmounts = new uint[](positions.length);
 
-        for (uint i; i < positions.length; ++i) {
+        for (uint i; i < positions.length; ++i)
             withdrawalAmounts[i] = positions[i].amount;
-        }
     }
 }

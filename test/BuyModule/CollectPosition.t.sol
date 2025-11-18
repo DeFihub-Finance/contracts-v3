@@ -64,10 +64,9 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.stopPrank();
 
-        for (uint i; i < availableTokens.length; ++i) {
+        for (uint i; i < availableTokens.length; ++i)
             // Assert user balances did not change
             assertEq(userBalancesBefore[i], userBalancesAfter[i]);
-        }
     }
 
     function test_collectPosition_reverts_notOwner() public {

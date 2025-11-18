@@ -56,9 +56,8 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         uint allocationPerInvestment = 100 ether;
         uint[] memory allocationAmounts = new uint[](availableTokens.length);
 
-        for (uint i; i < availableTokens.length; ++i) {
+        for (uint i; i < availableTokens.length; ++i)
             allocationAmounts[i] = allocationPerInvestment;
-        }
 
         (
             uint totalAmount,
@@ -72,28 +71,27 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
         vm.startPrank(account0);
 
         vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
-        buyPositionModule.createPosition(_getEncodedBuyInvestParams(totalAmount, usdc, investments));
+        buyPositionModule.createPosition(_encodeBuyInvestParams(totalAmount, usdc, investments));
     }
 
     function test_createPosition_reverts_totalAllocationsLessThanTolerance() public {
-        uint inputAmount = 9999 ether; // Significantly larger than total allocations
-        uint allocationPerInvestment = 1 ether;
         uint[] memory allocationAmounts = new uint[](availableTokens.length);
 
-        for (uint i; i < availableTokens.length; ++i) {
-            allocationAmounts[i] = allocationPerInvestment;
-        }
+        for (uint i; i < availableTokens.length; ++i)
+            allocationAmounts[i] = 1 ether; // 1 ether per buy investment
 
-        (, BuyPositionModule.Investment[] memory investments) = _createBuyInvestments(
-            usdc,
-            allocationAmounts
-        );
+        (
+            uint totalAmount,
+            BuyPositionModule.Investment[] memory investments
+        ) = _createBuyInvestments(usdc, allocationAmounts);
 
-        _mintAndApprove(inputAmount, usdc, account0, address(buyPositionModule));
+        totalAmount += 9999 ether; // Significantly larger than total allocations
+
+        _mintAndApprove(totalAmount, usdc, account0, address(buyPositionModule));
 
         vm.startPrank(account0);
 
         vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
-        buyPositionModule.createPosition(_getEncodedBuyInvestParams(inputAmount, usdc, investments));
+        buyPositionModule.createPosition(_encodeBuyInvestParams(totalAmount, usdc, investments));
     }
 }
