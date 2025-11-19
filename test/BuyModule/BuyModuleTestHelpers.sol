@@ -166,7 +166,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     /// @dev Helper to get the position buy amounts grouped by token.
     /// @param tokenId ID of the buy position
     /// @return buyAmountsByToken Buy amounts grouped by token
-    function _getBuyAmountsByToken(
+    function _getPositionAmountsByToken(
         uint tokenId
     ) internal returns (BalanceMap memory buyAmountsByToken) {
         buyAmountsByToken = BalanceMapper.init("buyAmounts");

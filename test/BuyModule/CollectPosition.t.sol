@@ -16,7 +16,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
     function test_fuzz_collectPosition(uint[] memory allocatedAmounts) public {
         uint tokenId = _createFuzzyBuyPosition(usdc, allocatedAmounts);
 
-        BalanceMap memory buyAmountsByToken = _getBuyAmountsByToken(tokenId);
+        BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
 
         vm.startPrank(account0);
