@@ -29,7 +29,7 @@ library BalanceMapper {
     function add(BalanceMap memory map, IERC20 token, uint amount) internal {
         bytes32 slot = computeSlot(map.identifier, token);
 
-        assembly ("memory-safe") {
+        assembly {
             let currentBalance := tload(slot)
             tstore(slot, add(currentBalance, amount))
         }
@@ -41,7 +41,7 @@ library BalanceMapper {
     ) internal view returns (uint amount) {
         bytes32 slot = computeSlot(map.identifier, token);
 
-        assembly ("memory-safe") {
+        assembly {
             amount := tload(slot)
         }
     }
