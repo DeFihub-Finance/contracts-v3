@@ -280,7 +280,7 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
-        uint protocolFee = (hasReferrer ? protocolFeeBps + referrerFeeBps : protocolFeeBps) * _inputAmount / 1e4;
+        uint protocolFee = (hasReferrer ? protocolFeeBps : protocolFeeBps + referrerFeeBps) * _inputAmount / 1e4;
         rewards[_getTreasury()][_token] += protocolFee;
         remainingAmount -= protocolFee;
         emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);
