@@ -175,7 +175,6 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
             totalAllocatedAmount += investment.allocatedAmount;
 
-            // this is easily exploited by not consuming tokens in the module
             _params.inputToken.safeIncreaseAllowance(address(investment.module), investment.allocatedAmount);
 
             _tokenToPositions[_tokenId].push(Position({
