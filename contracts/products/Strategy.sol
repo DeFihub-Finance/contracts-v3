@@ -68,6 +68,7 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
     error InvalidInput();
     error InsufficientOutputAmount();
+    error InvalidModule();
 
     constructor(
         address _owner,
@@ -148,7 +149,6 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         _makeInvestments(tokenId, _params);
     }
 
-    // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
         uint _tokenId,
         bytes memory _encodedInvestments
@@ -172,6 +172,9 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
         for (uint i; i < _params.investments.length; ++i) {
             Investment memory investment = _params.investments[i];
+
+            if (address(investment.module) == address(this))
+                revert InvalidModule();
 
             totalAllocatedAmount += investment.allocatedAmount;
 
