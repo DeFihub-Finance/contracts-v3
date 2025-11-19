@@ -5,9 +5,10 @@ import "forge-std/Test.sol";
 
 import {Constants} from "../utils/Constants.sol";
 import {Deployers} from "../utils/Deployers.sol";
+import {TestERC20} from "../utils/TestERC20.sol";
 import {SwapHelper} from "../utils/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
-import {TestERC20} from "../utils/TestERC20.sol";
+import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
@@ -160,5 +161,18 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
 
         for (uint i; i < positions.length; ++i)
             withdrawalAmounts[i] = positions[i].amount;
+    }
+
+    /// @dev Helper to get the position buy amounts grouped by token.
+    /// @param tokenId ID of the buy position
+    /// @return buyAmountsByToken Buy amounts grouped by token
+    function _getBuyAmountsByToken(
+        uint tokenId
+    ) internal returns (BalanceMap memory buyAmountsByToken) {
+        buyAmountsByToken = BalanceMapper.init("buyAmounts");
+        BuyPositionModule.Position[] memory positions = buyPositionModule.getPositions(tokenId);
+
+        for (uint i; i < positions.length; ++i)
+            buyAmountsByToken.add(positions[i].token, positions[i].amount);
     }
 }

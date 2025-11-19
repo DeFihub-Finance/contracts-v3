@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 
-import {Balances} from "../utils/Balances.sol";
+import {Balances, BalanceMap} from "../utils/Balances.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
 import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
@@ -16,8 +16,8 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     function test_fuzz_closePosition(uint[] memory allocatedAmounts) public {
         uint tokenId = _createFuzzyBuyPosition(usdc, allocatedAmounts);
 
+        BalanceMap memory buyAmountsByToken = _getBuyAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
-        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
 
         vm.startPrank(account0);
 
@@ -29,7 +29,7 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
             tokenId,
             _getBuyWithdrawalAmounts(tokenId)
         );
-        
+
         buyPositionModule.closePosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
@@ -37,10 +37,10 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
         uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
 
         for (uint i; i < availableTokens.length; ++i) {
-            // Assert user received tokens
+            // Assert user received exact amount from all positions with same token
             assertEq(
                 userBalancesAfter[i] - userBalancesBefore[i],
-                buyModuleBalancesBefore[i]
+                buyAmountsByToken.get(availableTokens[i])
             );
         }
     }
