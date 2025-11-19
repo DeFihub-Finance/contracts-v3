@@ -192,6 +192,9 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
     function _collectPosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
+        if (data.length != _tokenToPositions[_tokenId].length)
+            revert InvalidInput();
+
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
@@ -249,6 +252,9 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
     function _closePosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
+
+        if (data.length != _tokenToPositions[_tokenId].length)
+            revert InvalidInput();
 
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
