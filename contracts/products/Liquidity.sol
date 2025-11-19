@@ -203,8 +203,8 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 position.strategistPerformanceFeeBps
             );
 
-            pair.token0.safeTransfer(msg.sender, userRewards.amount0);
-            pair.token1.safeTransfer(msg.sender, userRewards.amount1);
+            pair.token0.safeTransfer(_beneficiary, userRewards.amount0);
+            pair.token1.safeTransfer(_beneficiary, userRewards.amount1);
 
             withdrawnAmounts[i] = userRewards;
         }
