@@ -18,6 +18,8 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
 
         BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
+        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
+
 
         vm.startPrank(account0);
 
@@ -35,13 +37,16 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
         vm.stopPrank();
 
         uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
+        uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
 
         for (uint i; i < availableTokens.length; ++i) {
+            uint userTokenBalance = userBalancesAfter[i] - userBalancesBefore[i];
+
             // Assert user received exact amount from all positions with same token
-            assertEq(
-                userBalancesAfter[i] - userBalancesBefore[i],
-                buyAmountsByToken.get(availableTokens[i])
-            );
+            assertEq(userTokenBalance, buyAmountsByToken.get(availableTokens[i]));
+
+            // Assert buy module sent all position amounts to user
+            assertEq(buyModuleBalancesBefore[i] - buyModuleBalancesAfter[i], userTokenBalance);
         }
     }
 
