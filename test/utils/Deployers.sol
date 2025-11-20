@@ -51,9 +51,9 @@ abstract contract Deployers is Test {
     IUniswapV3Pool public wethWbtcPool;
 
     // Fees
-    uint16 public immutable protocolFeeBps = 100; // 1%
-    uint16 public immutable referrerFeeSharingBps = 10; // 0.1%
-    uint16 public immutable strategistFeeSharingBps = 10; // 0.1%
+    uint16 public immutable protocolFeeBps = 50; // 0.5%
+    uint16 public immutable referrerFeeBps = 20; // 0.1%
+    uint16 public immutable strategistFeeBps = 10; // 0.1%
 
     function deployBaseContracts() public {
         vm.startPrank(owner);
@@ -88,15 +88,15 @@ abstract contract Deployers is Test {
             treasury,
             IWETH(address(weth)),
             protocolFeeBps,
-            strategistFeeSharingBps,
-            referrerFeeSharingBps,
+            strategistFeeBps,
+            referrerFeeBps,
             24 hours // Referral duration
         );
 
         liquidityPositionModule = new LiquidityPositionModule(
             owner,
             treasury,
-            strategistFeeSharingBps 
+            strategistFeeBps
         );
 
         buyPositionModule = new BuyPositionModule();
