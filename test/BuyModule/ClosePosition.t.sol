@@ -20,7 +20,6 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
         uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
 
-
         vm.startPrank(account0);
 
         // We dont care about topics 1, 2 and 3, only the data
