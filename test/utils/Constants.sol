@@ -8,17 +8,17 @@ library Constants {
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
     bytes32 public constant ZERO_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
+    uint16 public constant ONE_PERCENT_BPS = 100;
+
     // Pool fees
     uint24 public constant FEE_LOW = 500;
     uint24 public constant FEE_MEDIUM = 3000;
     uint24 public constant FEE_HIGH = 10000;
 
     // Token prices (multiple of 10 for simplicity)
-    uint24 public constant USD_PRICE = 1;
-    uint24 public constant WETH_PRICE = 10_000;
-    uint24 public constant WBTC_PRICE = 100_000;
-
-    uint public constant ONE_MILLION_ETHER = 1_000_000 ether;
+    uint public constant USD_PRICE = 1 ether;
+    uint public constant WETH_PRICE = 10_000 ether;
+    uint public constant WBTC_PRICE = 100_000 ether;
 
     // Artifact paths used for test deployments 
     string public constant FACTORY_PATH = "node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json";

@@ -11,15 +11,17 @@ import {RouterParameters} from "@uniswap/universal-router/contracts/types/Router
 
 import {Constants} from "./Constants.sol";
 import {UniswapV3Helper} from "./UniswapV3Helper.sol";
-import {TestWETH} from "../../contracts/test/TestWETH.sol";
-import {TestERC20} from "../../contracts/test/TestERC20.sol";
+import {TestWETH} from "./TestWETH.sol";
+import {TestERC20} from "./TestERC20.sol";
+import {TokenPrices} from "./TokenPrices.sol";
+import {Buy} from "../../contracts/products/Buy.sol";
 import {Strategy} from "../../contracts/products/Strategy.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
 import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 import {IWETH} from "../../external/interfaces/IWETH.sol";
 
-contract Deployers is Test {
+abstract contract Deployers is Test {
     // Accounts
     address public immutable owner = makeAddr("OWNER");
     address public immutable treasury = makeAddr("TREASURY");
@@ -29,10 +31,12 @@ contract Deployers is Test {
 
     // Tokens
     TestWETH public weth;
-    TestERC20 public usdt;
+    TestERC20 public usdc;
     TestERC20 public wbtc;
+    TestERC20[] public availableTokens;
 
     // DeFihub contracts
+    Buy public buyPositionModule;
     Strategy public strategyPositionModule;
     Liquidity public liquidityPositionModule;
 
@@ -42,58 +46,68 @@ contract Deployers is Test {
     IUniversalRouter public universalRouter;
     IUniswapV3Factory public factoryUniV3;
     INonfungiblePositionManager public positionManagerUniV3;
-    IUniswapV3Pool public usdtWethPool;
-    IUniswapV3Pool public usdtWbtcPool;
+    IUniswapV3Pool public usdcWethPool;
+    IUniswapV3Pool public usdcWbtcPool;
     IUniswapV3Pool public wethWbtcPool;
 
     // Fees
-    uint16 public immutable strategyFeeBps = 10; // 0.1%
-    uint16 public immutable referrerFeeSharingBps = 2_500; // 25%
-    uint16 public immutable strategistFeeSharingBps = 2_500; // 25%
+    uint16 public immutable protocolFeeBps = 50; // 0.5%
+    uint16 public immutable referrerFeeBps = 20; // 0.1%
+    uint16 public immutable strategistFeeBps = 10; // 0.1%
 
     function deployBaseContracts() public {
         vm.startPrank(owner);
 
-        deployTokens();
-        deployUniV3();
-        deployAndInitLiquidityPools();
-        deployHubModules();
+        _deployTokens();
+        _deployUniV3();
+        _deployAndInitLiquidityPools();
+        _deployHubModules();
 
         vm.stopPrank();
     }
 
     /// @notice Deploys test tokens
-    function deployTokens() internal {
-        weth = new TestWETH();
-        wbtc = new TestERC20(8);
-        usdt = new TestERC20(18);
+    function _deployTokens() internal {
+        TokenPrices tokenPrices = new TokenPrices();
+
+        weth = new TestWETH(tokenPrices);
+        wbtc = new TestERC20(18, tokenPrices);
+        usdc = new TestERC20(6, tokenPrices);
+
+        availableTokens = [usdc, wbtc, weth];
+
+        tokenPrices.setPrice(address(usdc), Constants.USD_PRICE);
+        tokenPrices.setPrice(address(wbtc), Constants.WBTC_PRICE);
+        tokenPrices.setPrice(address(weth), Constants.WETH_PRICE);
     }
 
     /// @notice Deploys DeFihub modules
-    function deployHubModules() internal {
+    function _deployHubModules() internal {
         strategyPositionModule = new Strategy(
             owner,
             treasury,
             IWETH(address(weth)),
-            strategyFeeBps,
-            strategistFeeSharingBps,
-            referrerFeeSharingBps,
+            protocolFeeBps,
+            strategistFeeBps,
+            referrerFeeBps,
             24 hours // Referral duration
         );
 
         liquidityPositionModule = new Liquidity(
             owner,
             treasury,
-            strategistFeeSharingBps 
+            strategistFeeBps
         );
+
+        buyPositionModule = new Buy();
     }
 
     /// @notice Deploys Uniswap V3 contracts
-    function deployUniV3() internal {
-        factoryUniV3 = IUniswapV3Factory(deployCodeFromArtifact(Constants.FACTORY_PATH));
+    function _deployUniV3() internal {
+        factoryUniV3 = IUniswapV3Factory(_deployCodeFromArtifact(Constants.FACTORY_PATH));
 
         positionManagerUniV3 = INonfungiblePositionManager(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.POSITION_MANAGER_PATH,
                 abi.encode(
                     address(factoryUniV3),
@@ -104,21 +118,21 @@ contract Deployers is Test {
         );
 
         quoterUniV3 = IQuoter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.QUOTER_PATH,
                 abi.encode(address(factoryUniV3), address(weth))
             )
         );
 
         routerUniV3 = ISwapRouter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.SWAP_ROUTER_PATH,
                 abi.encode(address(factoryUniV3), address(weth))
             )
         );
 
         universalRouter = IUniversalRouter(
-            deployCodeFromArtifact(
+            _deployCodeFromArtifact(
                 Constants.UNIVERSAL_ROUTER_PATH,
                 abi.encode(
                     RouterParameters({
@@ -140,31 +154,27 @@ contract Deployers is Test {
         );
     }
 
-    function deployAndInitLiquidityPools() public {
-        usdtWethPool = IUniswapV3Pool(
+    function _deployAndInitLiquidityPools() internal {
+        uint AMOUNT_USD_PER_TOKEN = 100_000_000_000 ether;
+
+        usdcWethPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
                 factoryUniV3,
                 positionManagerUniV3,
-                usdt,
+                usdc,
                 weth,
-                Constants.ONE_MILLION_ETHER,
-                Constants.ONE_MILLION_ETHER / Constants.WETH_PRICE,
-                Constants.USD_PRICE,
-                Constants.WETH_PRICE, 
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
 
-        usdtWbtcPool = IUniswapV3Pool(
+        usdcWbtcPool = IUniswapV3Pool(
             UniswapV3Helper.mintAndAddLiquidity(
                 factoryUniV3,
                 positionManagerUniV3,
-                usdt,
+                usdc,
                 wbtc,
-                Constants.ONE_MILLION_ETHER,
-                Constants.ONE_MILLION_ETHER / Constants.WBTC_PRICE,
-                Constants.USD_PRICE,
-                Constants.WBTC_PRICE, 
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
@@ -175,22 +185,33 @@ contract Deployers is Test {
                 positionManagerUniV3,
                 weth,
                 wbtc,
-                Constants.ONE_MILLION_ETHER / Constants.WETH_PRICE,
-                Constants.ONE_MILLION_ETHER / Constants.WBTC_PRICE,
-                Constants.WETH_PRICE,
-                Constants.WBTC_PRICE, 
+                AMOUNT_USD_PER_TOKEN,
                 owner
             )
         );
     }
 
+    function _mintAndApprove(
+        uint amount,
+        TestERC20 token,
+        address recipient,
+        address spender
+    ) internal {
+        vm.startPrank(recipient);
+
+        token.mint(recipient, amount);
+        token.approve(spender, amount);
+
+        vm.stopPrank();
+    }
+
     /// @notice Deploys a contract from an artifact
     /// @param path The path to the artifact
     /// @return deployedAddress The address of the deployed contract
-    function deployCodeFromArtifact(
+    function _deployCodeFromArtifact(
         string memory path
     ) internal returns (address deployedAddress) {
-        bytes memory bytecode = getCodeFromArtifact(path);
+        bytes memory bytecode = _getCodeFromArtifact(path);
 
         assembly {
             deployedAddress := create(0, add(bytecode, 0x20), mload(bytecode))
@@ -203,12 +224,12 @@ contract Deployers is Test {
     /// @param path The path to the artifact
     /// @param args The arguments to pass to the constructor
     /// @return deployedAddress The address of the deployed contract
-    function deployCodeFromArtifact(
+    function _deployCodeFromArtifact(
         string memory path,
         bytes memory args
     ) internal returns (address deployedAddress) {
         bytes memory bytecode = abi.encodePacked(
-            getCodeFromArtifact(path),
+            _getCodeFromArtifact(path),
             args
         );
 
@@ -222,7 +243,7 @@ contract Deployers is Test {
     /// @notice Gets the bytecode from an artifact
     /// @param path The path to the artifact
     /// @return bytecode The bytecode of the contract
-    function getCodeFromArtifact(
+    function _getCodeFromArtifact(
         string memory path
     ) internal view returns (bytes memory) {
         return stdJson.readBytes(vm.readFile(path), ".bytecode");
