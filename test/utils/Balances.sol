@@ -21,7 +21,7 @@ library BalanceMapper {
     function computeSlot(
         string memory identifier,
         IERC20 token
-    ) internal pure returns (bytes32) {
+    ) private pure returns (bytes32) {
         // Use identifier to avoid slot collisions between other maps
         return keccak256(abi.encodePacked(identifier, token));
     }
