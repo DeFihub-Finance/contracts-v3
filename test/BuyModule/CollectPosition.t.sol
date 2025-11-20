@@ -31,13 +31,13 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
 
         for (uint i; i < availableTokens.length; ++i) {
-            uint userTokenBalance = userBalancesAfter[i] - userBalancesBefore[i];
+            uint userBalanceDelta = userBalancesAfter[i] - userBalancesBefore[i];
 
             // Assert user received exact amount from all positions with same token
-            assertEq(userTokenBalance, buyAmountsByToken.get(availableTokens[i]));
+            assertEq(userBalanceDelta, buyAmountsByToken.get(availableTokens[i]));
 
             // Assert buy module sent all position amounts to user
-            assertEq(buyModuleBalancesBefore[i] - buyModuleBalancesAfter[i], userTokenBalance);
+            assertEq(buyModuleBalancesBefore[i] - buyModuleBalancesAfter[i], userBalanceDelta);
         }
     }
 
