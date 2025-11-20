@@ -11,7 +11,7 @@ import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
 import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
-import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
+import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
 abstract contract BuyModuleTestHelpers is Test, Deployers {
     /// Maximum number of investments in a buy position for fuzz testing
@@ -116,7 +116,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
                 inputToken: _inputToken,
                 inputAmount: _inputAmount,
                 investments: _investments,
-                strategy: BasePositionModule.StrategyIdentifier({
+                strategy: UsePosition.StrategyIdentifier({
                     strategist: owner,
                     externalRef: 1
                 })

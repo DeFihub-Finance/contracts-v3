@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
-import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
+import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 import {TestERC20} from "../utils/TestERC20.sol";
 
 contract CreatePosition is Test, BuyModuleTestHelpers {
@@ -70,7 +70,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
+        vm.expectRevert(UsePosition.InvalidAllocatedAmount.selector);
         buyPositionModule.createPosition(_encodeBuyInvestParams(totalAmount, usdc, investments));
     }
 
@@ -91,7 +91,7 @@ contract CreatePosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        vm.expectRevert(BasePositionModule.InvalidAllocatedAmount.selector);
+        vm.expectRevert(UsePosition.InvalidAllocatedAmount.selector);
         buyPositionModule.createPosition(_encodeBuyInvestParams(totalAmount, usdc, investments));
     }
 }

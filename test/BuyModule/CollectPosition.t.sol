@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {Balances, BalanceMap} from "../utils/Balances.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
-import {BasePositionModule} from "../../contracts/abstract/BasePositionModule.sol";
+import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
 contract CollectPosition is Test, BuyModuleTestHelpers {
     function setUp() public {
@@ -80,7 +80,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         vm.startPrank(account0);
 
-        vm.expectRevert(BasePositionModule.Unauthorized.selector);
+        vm.expectRevert(UsePosition.Unauthorized.selector);
         buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
     }
 
