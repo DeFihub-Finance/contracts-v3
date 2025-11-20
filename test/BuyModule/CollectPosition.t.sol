@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {Balances, BalanceMap} from "../utils/Balances.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
-import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
+import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
 contract CollectPosition is Test, BuyModuleTestHelpers {
@@ -18,17 +18,17 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
-        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
+        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buy), availableTokens);
 
         vm.startPrank(account0);
 
         _expectEmitPositionCollected(tokenId, _getBuyWithdrawalAmounts(tokenId));
-        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+        buy.collectPosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
 
         uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
-        uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
+        uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buy), availableTokens);
 
         for (uint i; i < availableTokens.length; ++i) {
             uint userBalanceDelta = userBalancesAfter[i] - userBalancesBefore[i];
@@ -47,13 +47,13 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
 
         allocatedAmounts[0] = inputAmount;
 
-        (, BuyPositionModule.Investment[] memory investments) = _createBuyInvestments(usdc, allocatedAmounts);
+        (, Buy.Investment[] memory investments) = _createBuyInvestments(usdc, allocatedAmounts);
         uint tokenId = _createBuyPosition(inputAmount, usdc, investments);
 
         vm.startPrank(account0);
 
         _expectEmitPositionCollected(tokenId, _getBuyWithdrawalAmounts(tokenId));
-        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+        buy.collectPosition(account0, tokenId, new bytes(0));
 
         // Get user balances before collecting again
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
@@ -62,7 +62,7 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
             tokenId,
             new uint[](0) // No token to withdraw since already collected
         );
-        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+        buy.collectPosition(account0, tokenId, new bytes(0));
 
         uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
 
@@ -74,14 +74,14 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
     }
 
     function test_collectPosition_reverts_notOwner() public {
-        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new Buy.Investment[](0));
 
         tokenId += 1; // Ensure tokenId is not owned by account0
 
         vm.startPrank(account0);
 
         vm.expectRevert(UsePosition.Unauthorized.selector);
-        buyPositionModule.collectPosition(account0, tokenId, new bytes(0));
+        buy.collectPosition(account0, tokenId, new bytes(0));
     }
 
     function _expectEmitPositionCollected(
@@ -89,8 +89,8 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         uint[] memory withdrawalAmounts
     ) internal {
         // We dont care about topics 1, 2 and 3, only the data
-        vm.expectEmit(false, false, false, true, address(buyPositionModule));
-        emit BuyPositionModule.PositionCollected(
+        vm.expectEmit(false, false, false, true, address(buy));
+        emit Buy.PositionCollected(
             account0,
             account0,
             tokenId,

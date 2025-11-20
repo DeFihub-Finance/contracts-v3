@@ -36,9 +36,9 @@ abstract contract Deployers is Test {
     TestERC20[] public availableTokens;
 
     // DeFihub contracts
-    Buy public buyPositionModule;
-    Strategy public strategyPositionModule;
-    Liquidity public liquidityPositionModule;
+    Buy public buy;
+    Strategy public strategy;
+    Liquidity public liquidity;
 
     // External contracts
     IQuoter public quoterUniV3;
@@ -83,7 +83,7 @@ abstract contract Deployers is Test {
 
     /// @notice Deploys DeFihub modules
     function _deployHubModules() internal {
-        strategyPositionModule = new Strategy(
+        strategy = new Strategy(
             owner,
             treasury,
             IWETH(address(weth)),
@@ -93,13 +93,13 @@ abstract contract Deployers is Test {
             24 hours // Referral duration
         );
 
-        liquidityPositionModule = new Liquidity(
+        liquidity = new Liquidity(
             owner,
             treasury,
             strategistFeeBps
         );
 
-        buyPositionModule = new Buy();
+        buy = new Buy();
     }
 
     /// @notice Deploys Uniswap V3 contracts
