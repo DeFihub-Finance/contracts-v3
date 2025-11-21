@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 
+import {TestERC20} from "../utils/TestERC20.sol";
 import {Balances, BalanceMap} from "../utils/Balances.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
@@ -13,8 +14,8 @@ contract CollectPosition is Test, BuyModuleTestHelpers {
         deployBaseContracts();
     }
 
-    function test_fuzz_collectPosition(uint[] memory allocatedAmounts) public {
-        uint tokenId = _createFuzzyBuyPosition(usdc, allocatedAmounts);
+    function test_fuzz_collectPosition(uint random, uint[] memory allocatedAmounts) public {
+        uint tokenId = _createFuzzyBuyPosition(_getTokenFromNumber(random), allocatedAmounts);
 
         BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
