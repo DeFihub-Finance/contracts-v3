@@ -10,7 +10,7 @@ import {SwapHelper} from "../utils/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
 import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
-import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
+import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
 abstract contract BuyModuleTestHelpers is Test, Deployers {
@@ -29,7 +29,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
 
         (
             uint totalAmount,
-            BuyPositionModule.Investment[] memory investments
+            Buy.Investment[] memory investments
         ) = _createBuyInvestments(inputToken, allocatedAmounts);
 
         return _createBuyPosition(totalAmount, inputToken, investments);
@@ -43,13 +43,13 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     function _createBuyPosition(
         uint inputAmount,
         TestERC20 inputToken,
-        BuyPositionModule.Investment[] memory investments
+        Buy.Investment[] memory investments
     ) internal returns (uint tokenId) {
-        _mintAndApprove(inputAmount, inputToken, account0, address(buyPositionModule));
+        _mintAndApprove(inputAmount, inputToken, account0, address(buy));
 
         vm.startPrank(account0);
 
-        tokenId = buyPositionModule.createPosition(
+        tokenId = buy.createPosition(
             _encodeBuyInvestParams(inputAmount, inputToken, investments)
         );
 
@@ -64,14 +64,14 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     function _createBuyInvestments(
         TestERC20 inputToken,
         uint[] memory allocatedAmounts
-    ) internal returns (uint totalAmount, BuyPositionModule.Investment[] memory investments) {
-        investments = new BuyPositionModule.Investment[](allocatedAmounts.length);
+    ) internal returns (uint totalAmount, Buy.Investment[] memory investments) {
+        investments = new Buy.Investment[](allocatedAmounts.length);
 
         for (uint i; i < allocatedAmounts.length; ++i) {
             uint _allocatedAmount = allocatedAmounts[i];
             TestERC20 buyToken = availableTokens[i % availableTokens.length];
 
-            investments[i] = BuyPositionModule.Investment({
+            investments[i] = Buy.Investment({
                 swap: _getSwap(_allocatedAmount, inputToken, buyToken),
                 token: buyToken,
                 allocatedAmount: _allocatedAmount
@@ -109,10 +109,10 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     function _encodeBuyInvestParams(
         uint _inputAmount,
         TestERC20 _inputToken,
-        BuyPositionModule.Investment[] memory _investments
+        Buy.Investment[] memory _investments
     ) internal view returns (bytes memory) {
         return abi.encode(
-            BuyPositionModule.InvestParams({
+            Buy.InvestParams({
                 inputToken: _inputToken,
                 inputAmount: _inputAmount,
                 investments: _investments,
@@ -137,7 +137,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         return SwapHelper.getHubSwapExactInput(
             SwapHelper.GetHubSwapParams({
                 slippageBps: Constants.ONE_PERCENT_BPS,
-                recipient: address(buyPositionModule),
+                recipient: address(buy),
                 amount: _amount,
                 inputToken: _inputToken,
                 outputToken: _outputToken,
@@ -154,8 +154,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
     function _getBuyWithdrawalAmounts(
         uint tokenId
     ) internal view returns (uint[] memory withdrawalAmounts) {
-        BuyPositionModule.Position[] memory positions = buyPositionModule
-            .getPositions(tokenId);
+        Buy.Position[] memory positions = buy.getPositions(tokenId);
 
         withdrawalAmounts = new uint[](positions.length);
 
@@ -170,7 +169,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployers {
         uint tokenId
     ) internal returns (BalanceMap memory buyAmountsByToken) {
         buyAmountsByToken = BalanceMapper.init("buyAmounts");
-        BuyPositionModule.Position[] memory positions = buyPositionModule.getPositions(tokenId);
+        Buy.Position[] memory positions = buy.getPositions(tokenId);
 
         for (uint i; i < positions.length; ++i)
             buyAmountsByToken.add(positions[i].token, positions[i].amount);

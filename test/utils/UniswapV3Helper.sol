@@ -8,7 +8,7 @@ import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV
 
 import {Constants} from "../utils/Constants.sol";
 import {TestERC20} from "./TestERC20.sol";
-import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
+import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 
 library UniswapV3Helper {
     uint constant internal Q192 = 1 << 192;

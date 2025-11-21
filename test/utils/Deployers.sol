@@ -14,12 +14,12 @@ import {UniswapV3Helper} from "./UniswapV3Helper.sol";
 import {TestWETH} from "./TestWETH.sol";
 import {TestERC20} from "./TestERC20.sol";
 import {TokenPrices} from "./TokenPrices.sol";
-import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
-import {StrategyPositionModule} from "../../contracts/StrategyPositionModule.sol";
-import {LiquidityPositionModule} from "../../contracts/modules/LiquidityPositionModule.sol";
-import {IUniversalRouter} from "../../contracts/interfaces/external/IUniversalRouter.sol";
-import {INonfungiblePositionManager} from "../../contracts/interfaces/external/INonfungiblePositionManager.sol";
-import {IWETH} from "../../contracts/interfaces/external/IWETH.sol";
+import {Buy} from "../../contracts/products/Buy.sol";
+import {Strategy} from "../../contracts/products/Strategy.sol";
+import {Liquidity} from "../../contracts/products/Liquidity.sol";
+import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
+import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
+import {IWETH} from "../../external/interfaces/IWETH.sol";
 
 abstract contract Deployers is Test {
     // Accounts
@@ -36,9 +36,9 @@ abstract contract Deployers is Test {
     TestERC20[] public availableTokens;
 
     // DeFihub contracts
-    BuyPositionModule public buyPositionModule;
-    StrategyPositionModule public strategyPositionModule;
-    LiquidityPositionModule public liquidityPositionModule;
+    Buy public buy;
+    Strategy public strategy;
+    Liquidity public liquidity;
 
     // External contracts
     IQuoter public quoterUniV3;
@@ -83,7 +83,7 @@ abstract contract Deployers is Test {
 
     /// @notice Deploys DeFihub modules
     function _deployHubModules() internal {
-        strategyPositionModule = new StrategyPositionModule(
+        strategy = new Strategy(
             owner,
             treasury,
             IWETH(address(weth)),
@@ -93,13 +93,13 @@ abstract contract Deployers is Test {
             24 hours // Referral duration
         );
 
-        liquidityPositionModule = new LiquidityPositionModule(
+        liquidity = new Liquidity(
             owner,
             treasury,
             strategistFeeBps
         );
 
-        buyPositionModule = new BuyPositionModule();
+        buy = new Buy();
     }
 
     /// @notice Deploys Uniswap V3 contracts
@@ -201,7 +201,7 @@ abstract contract Deployers is Test {
 
         token.mint(recipient, amount);
         token.approve(spender, amount);
-        
+
         vm.stopPrank();
     }
 

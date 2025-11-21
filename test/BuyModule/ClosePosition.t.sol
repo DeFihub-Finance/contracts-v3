@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {Balances, BalanceMap} from "../utils/Balances.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
-import {BuyPositionModule} from "../../contracts/modules/BuyPositionModule.sol";
+import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
 contract ClosePosition is Test, BuyModuleTestHelpers {
@@ -18,25 +18,25 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
 
         BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
-        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
+        uint[] memory buyModuleBalancesBefore = Balances.getAccountBalances(address(buy), availableTokens);
 
         vm.startPrank(account0);
 
         // We dont care about topics 1, 2 and 3, only the data
-        vm.expectEmit(false, false, false, true, address(buyPositionModule));
-        emit BuyPositionModule.PositionClosed(
+        vm.expectEmit(false, false, false, true, address(buy));
+        emit Buy.PositionClosed(
             account0,
             account0,
             tokenId,
             _getBuyWithdrawalAmounts(tokenId)
         );
 
-        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+        buy.closePosition(account0, tokenId, new bytes(0));
 
         vm.stopPrank();
 
         uint[] memory userBalancesAfter = Balances.getAccountBalances(account0, availableTokens);
-        uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buyPositionModule), availableTokens);
+        uint[] memory buyModuleBalancesAfter = Balances.getAccountBalances(address(buy), availableTokens);
 
         for (uint i; i < availableTokens.length; ++i) {
             uint userBalanceDelta = userBalancesAfter[i] - userBalancesBefore[i];
@@ -50,24 +50,24 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
     }
 
     function test_closePositionAlreadyClosed_reverts_unauthorized() public {
-        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new Buy.Investment[](0));
 
         vm.startPrank(account0);
 
-        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+        buy.closePosition(account0, tokenId, new bytes(0));
 
         vm.expectRevert(UsePosition.Unauthorized.selector);
-        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+        buy.closePosition(account0, tokenId, new bytes(0));
     }
 
     function test_closePosition_reverts_notOwner() public {
-        uint tokenId = _createBuyPosition(0, usdc, new BuyPositionModule.Investment[](0));
+        uint tokenId = _createBuyPosition(0, usdc, new Buy.Investment[](0));
 
         tokenId += 1; // Ensure tokenId is not owned by account0
 
         vm.startPrank(account0);
 
         vm.expectRevert(UsePosition.Unauthorized.selector);
-        buyPositionModule.closePosition(account0, tokenId, new bytes(0));
+        buy.closePosition(account0, tokenId, new bytes(0));
     }
 }

@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {UsePosition} from "../abstract/UsePosition.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract BuyPositionModule is UsePosition("DeFihub Buy Position", "DHBP") {
+contract Buy is UsePosition("DeFihub Buy Position", "DHBP") {
     using SafeERC20 for IERC20;
 
     struct Investment {
