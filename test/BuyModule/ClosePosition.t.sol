@@ -13,8 +13,8 @@ contract ClosePosition is Test, BuyModuleTestHelpers {
         deployBaseContracts();
     }
 
-    function test_fuzz_closePosition(uint[] memory allocatedAmounts) public {
-        uint tokenId = _createFuzzyBuyPosition(usdc, allocatedAmounts);
+    function test_fuzz_closePosition(uint random, uint[] memory allocatedAmounts) public {
+        uint tokenId = _createFuzzyBuyPosition(_getTokenFromNumber(random), allocatedAmounts);
 
         BalanceMap memory buyAmountsByToken = _getPositionAmountsByToken(tokenId);
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
