@@ -44,8 +44,6 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
     }
 
     struct ERC20Permit {
-        address owner;
-        address spender;
         uint value;
         uint deadline;
         uint8 v;
@@ -129,20 +127,19 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         InvestParams memory _params,
         ERC20Permit memory _permit
     ) external returns (uint tokenId) {
-        if (_permit.owner != msg.sender || _permit.spender != address(this))
-            revert Unauthorized();
-
         tokenId = _createToken();
 
-        IERC20Permit(address(_params.inputToken)).permit(
-            _permit.owner,
-            _permit.spender,
-            _permit.value,
-            _permit.deadline,
-            _permit.v,
-            _permit.r,
-            _permit.s
-        );
+        // if statement prevents permit front-running DOS
+        if (_params.inputToken.allowance(msg.sender, address(this)) < _params.inputAmount)
+            IERC20Permit(address(_params.inputToken)).permit(
+                msg.sender,
+                address(this),
+                _permit.value,
+                _permit.deadline,
+                _permit.v,
+                _permit.r,
+                _permit.s
+            );
 
         _params.inputAmount = _pullToken(_params.inputToken, _params.inputAmount);
 
