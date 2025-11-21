@@ -97,9 +97,9 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
     constructor(
         address _owner,
         address _treasury,
-        uint16 _newStrategistFeeSharingBps
+        uint16 _protocolPerformanceFeeBps
     ) UseTreasury(_treasury) Ownable(_owner) {
-        _setProtocolPerformanceFee(_newStrategistFeeSharingBps);
+        _setProtocolPerformanceFee(_protocolPerformanceFeeBps);
     }
 
     function getPositions(uint _tokenId) external view returns (Position memory) {
@@ -119,10 +119,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         emit ProtocolPerformanceFeeUpdated(_protocolPerformanceFeeBps);
     }
 
-    function _createPosition(
-        uint _tokenId,
-        bytes memory _encodedInvestments
-    ) internal override {
+    function _createPosition(uint _tokenId, bytes memory _encodedInvestments) internal override {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
         if (params.strategistPerformanceFeeBps > MAX_STRATEGIST_FEE_BPS)
@@ -203,8 +200,8 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 position.strategistPerformanceFeeBps
             );
 
-            pair.token0.safeTransfer(msg.sender, userRewards.amount0);
-            pair.token1.safeTransfer(msg.sender, userRewards.amount1);
+            pair.token0.safeTransfer(_beneficiary, userRewards.amount0);
+            pair.token1.safeTransfer(_beneficiary, userRewards.amount1);
 
             withdrawnAmounts[i] = userRewards;
         }
