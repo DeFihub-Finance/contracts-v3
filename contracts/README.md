@@ -18,7 +18,7 @@ contracts/
 ├── abstract/          # Reusable base contracts
 ├── products/          # Investment product modules
 ├── libraries/         # Utility libraries
-└── helpers/          # Helper contracts
+└── helpers/           # Helper contracts
 ```
 
 ## Architecture Overview
