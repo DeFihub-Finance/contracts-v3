@@ -13,7 +13,7 @@ import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-abstract contract BuyModuleTestHelpers is Test, Deployers {
+abstract contract BuyHelpers is Test, Deployers {
     /// Maximum number of investments in a buy position for fuzz testing
     uint8 internal constant MAX_INVESTMENTS = 20;
 
