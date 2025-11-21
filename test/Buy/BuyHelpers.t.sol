@@ -69,7 +69,7 @@ abstract contract BuyHelpers is Test, Deployers {
 
         for (uint i; i < allocatedAmounts.length; ++i) {
             uint _allocatedAmount = allocatedAmounts[i];
-            TestERC20 buyToken = availableTokens[i % availableTokens.length];
+            TestERC20 buyToken = _getTokenFromNumber(i);
 
             investments[i] = Buy.Investment({
                 swap: _getSwap(_allocatedAmount, inputToken, buyToken),
@@ -173,5 +173,9 @@ abstract contract BuyHelpers is Test, Deployers {
 
         for (uint i; i < positions.length; ++i)
             buyAmountsByToken.add(positions[i].token, positions[i].amount);
+    }
+
+    function _getTokenFromNumber(uint _number) internal view returns (TestERC20) {
+        return availableTokens[_number % availableTokens.length];
     }
 }

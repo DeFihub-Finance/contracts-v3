@@ -13,13 +13,18 @@ contract CreatePosition is Test, BuyHelpers {
         deployBaseContracts();
     }
 
-    function test_fuzz_createPosition(uint[] memory allocatedAmounts) public {
+    function test_fuzz_createPosition(uint random, uint[] memory allocatedAmounts) public {
+        TestERC20 inputToken = _getTokenFromNumber(random);
+
         (
             uint totalAmount,
             Buy.Investment[] memory investments
-        ) = _createBuyInvestments(usdc, _boundAllocatedAmounts(allocatedAmounts, usdc));
+        ) = _createBuyInvestments(
+            inputToken,
+            _boundAllocatedAmounts(allocatedAmounts, inputToken)
+        );
 
-        uint tokenId = _createBuyPosition(totalAmount, usdc, investments);
+        uint tokenId = _createBuyPosition(totalAmount, inputToken, investments);
         Buy.Position[] memory positions = buy.getPositions(tokenId);
 
         assertEq(tokenId, 0);
@@ -36,7 +41,7 @@ contract CreatePosition is Test, BuyHelpers {
             // Compare price impact values in USD, normalized with 18 decimals
             assertApproxEqRel(
                 TestERC20(outputTokenAddress).amountToUsd(position.amount),
-                usdc.amountToUsd(investments[i].allocatedAmount),
+                inputToken.amountToUsd(investments[i].allocatedAmount),
                 0.05 ether // 5% price impact tolerance
             );
         }
