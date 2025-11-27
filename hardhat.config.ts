@@ -3,6 +3,8 @@ import type { HardhatUserConfig } from "hardhat/config";
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import { configVariable } from "hardhat/config";
 
+process.loadEnvFile(".env")
+
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
   solidity: {
@@ -29,7 +31,7 @@ const config: HardhatUserConfig = {
     solidity: {
       allowInternalExpectRevert: true,
       fuzz: {
-        runs: 1024,
+        runs: Number(process.env.FUZZ_RUNS) || 1024,
       },
       fsPermissions: {
         readDirectory: ["node_modules/@uniswap"]
