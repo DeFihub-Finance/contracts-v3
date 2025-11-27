@@ -136,4 +136,31 @@ library UniswapV3Helper {
         amount0 = _token0.usdToAmount(amount0Usd);
         amount1 = _token1.usdToAmount(amount1Usd);
     }
+
+    function getPositionTokenAmounts(
+        uint tokenId,
+        IUniswapV3Factory factory,
+        INonfungiblePositionManager positionManager
+    ) internal view returns (uint amount0, uint amount1) {
+        (
+            ,,
+            address token0, 
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            ,,,
+        ) = positionManager.positions(tokenId);
+
+        address poolAddress = factory.getPool(token0, token1, fee);
+        (uint160 sqrtPriceX96,,,,,,) = IUniswapV3Pool(poolAddress).slot0();
+
+        return LiquidityAmounts.getAmountsForLiquidity(
+            sqrtPriceX96,
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidity
+        );
+    }
 }
