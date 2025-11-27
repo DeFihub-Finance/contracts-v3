@@ -4,7 +4,10 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
+import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
 import {Constants} from "./Constants.sol";
 import {TestERC20} from "./TestERC20.sol";
@@ -90,5 +93,47 @@ library UniswapV3Helper {
 
     function minUsableTick(int24 tickSpacing) internal pure returns (int24) {
         return (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
+    }
+
+    function getMintTokenAmounts(
+        uint inputAmount,
+        TestERC20 inputToken,
+        IUniswapV3Pool pool,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidityDeltaMax
+    ) internal view returns (uint amount0, uint amount1) {
+        TestERC20 _token0 = TestERC20(pool.token0());
+        TestERC20 _token1 = TestERC20(pool.token1());
+        (uint160 sqrtPriceX96, int24 currentTick,,,,,) = pool.slot0();
+
+        uint inputUsd = inputToken.amountToUsd(inputAmount);
+
+        if (currentTick <= tickLower)
+            // Price below range: all token0
+            return (_token0.usdToAmount(inputUsd), 0);
+
+        if (currentTick >= tickUpper)
+            // Price above range: all token1
+            return (0, _token1.usdToAmount(inputUsd));
+
+        // Get max amount0 and amount1 that can be deposited
+        (uint maxAmount0, uint maxAmount1) = LiquidityAmounts.getAmountsForLiquidity(
+            sqrtPriceX96,
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidityDeltaMax
+        );
+
+        // Compute ratio scaled by 1e18
+        uint ratio = Math.mulDiv(_token1.amountToUsd(maxAmount1), 1e18, _token0.amountToUsd(maxAmount0));
+
+        // amount0Usd = inputUsd / 1 + ratio (scaled by 1e18)
+        uint amount0Usd = Math.mulDiv(inputUsd, 1e18, 1e18 + ratio);
+        // amount1Usd = ratio * amount0Usd (scaled by 1e18)
+        uint amount1Usd = Math.mulDiv(ratio, amount0Usd, 1e18);
+
+        amount0 = _token0.usdToAmount(amount0Usd);
+        amount1 = _token1.usdToAmount(amount1Usd);
     }
 }
