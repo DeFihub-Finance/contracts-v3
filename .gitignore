@@ -21,3 +21,6 @@
 
 # IDE files
 /.idea
+
+# Env variables
+.env
