@@ -49,6 +49,7 @@ abstract contract Deployers is Test {
     IUniswapV3Pool public usdcWethPool;
     IUniswapV3Pool public usdcWbtcPool;
     IUniswapV3Pool public wethWbtcPool;
+    IUniswapV3Pool[] public availablePools;
 
     // Fees
     uint16 public immutable protocolFeeBps = 50; // 0.5%
@@ -189,6 +190,8 @@ abstract contract Deployers is Test {
                 owner
             )
         );
+
+        availablePools = [usdcWethPool, usdcWbtcPool, wethWbtcPool];
     }
 
     function _mintAndApprove(
