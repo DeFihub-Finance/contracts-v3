@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
-import {Vm} from "forge-std/Vm.sol";
+
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
-import {Constants} from "../utils/Constants.sol";
+import {Constants} from "./Constants.sol";
 import {TestERC20} from "./TestERC20.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 
@@ -38,6 +38,8 @@ library UniswapV3Helper {
             );
         }
 
+        int24 tickSpacing = IUniswapV3Pool(poolAddress).tickSpacing();
+
         token0.mint(to, amount0);
         token1.mint(to, amount1);
 
@@ -49,8 +51,8 @@ library UniswapV3Helper {
                 token0: addr0,
                 token1: addr1,
                 fee: Constants.FEE_MEDIUM,
-                tickLower: -887220, // Must be aligned with fee tick spacing
-                tickUpper: 887220, // Must be aligned with fee tick spacing
+                tickLower: UniswapV3Helper.minUsableTick(tickSpacing),
+                tickUpper: UniswapV3Helper.maxUsableTick(tickSpacing),
                 amount0Desired: amount0,
                 amount1Desired: amount1,
                 amount0Min: 0,
@@ -80,5 +82,13 @@ library UniswapV3Helper {
         return address(tokenA) < address(tokenB)
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
+    }
+
+    function maxUsableTick(int24 tickSpacing) internal pure returns (int24) {
+        return (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
+    }
+
+    function minUsableTick(int24 tickSpacing) internal pure returns (int24) {
+        return (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
     }
 }
