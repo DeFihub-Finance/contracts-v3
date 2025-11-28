@@ -5,11 +5,11 @@ import "forge-std/Test.sol";
 
 import {TestERC20} from "../utils/TestERC20.sol";
 import {Balances, BalanceMap} from "../utils/Balances.sol";
-import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
+import {BuyHelpers} from "./BuyHelpers.t.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-contract CollectPosition is Test, BuyModuleTestHelpers {
+contract CollectPosition is Test, BuyHelpers {
     function setUp() public {
         deployBaseContracts();
     }
