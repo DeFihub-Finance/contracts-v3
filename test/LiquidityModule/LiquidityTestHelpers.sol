@@ -208,9 +208,8 @@ abstract contract LiquidityTestHelpers is Test, Deployers {
         tickLower = int24(bound(tickLower, minUsableTick, maxUsableTick));
         tickUpper = int24(bound(tickUpper, minUsableTick, maxUsableTick));
 
-        // Align ticks
-        tickLower = (tickLower / tickSpacing) * tickSpacing;
-        tickUpper = (tickUpper / tickSpacing) * tickSpacing;
+        tickLower = UniswapV3Helper.alignTick(tickLower, tickSpacing);
+        tickUpper = UniswapV3Helper.alignTick(tickUpper, tickSpacing);
 
         // Swap ticks if lower > upper
         (tickLower, tickUpper) = tickLower < tickUpper ? (tickLower, tickUpper) : (tickUpper, tickLower);

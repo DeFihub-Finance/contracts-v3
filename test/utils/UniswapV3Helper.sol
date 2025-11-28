@@ -87,12 +87,16 @@ library UniswapV3Helper {
             : (tokenB, tokenA);
     }
 
+    function alignTick(int24 tick, int24 tickSpacing) internal pure returns (int24) {
+        return (tick / tickSpacing) * tickSpacing;
+    }
+
     function maxUsableTick(int24 tickSpacing) internal pure returns (int24) {
-        return (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
+        return UniswapV3Helper.alignTick(TickMath.MAX_TICK, tickSpacing);
     }
 
     function minUsableTick(int24 tickSpacing) internal pure returns (int24) {
-        return (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        return UniswapV3Helper.alignTick(TickMath.MIN_TICK, tickSpacing);
     }
 
     function getMintTokenAmounts(
@@ -144,7 +148,7 @@ library UniswapV3Helper {
     ) internal view returns (uint amount0, uint amount1) {
         (
             ,,
-            address token0, 
+            address token0,
             address token1,
             uint24 fee,
             int24 tickLower,
