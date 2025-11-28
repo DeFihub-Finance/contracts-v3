@@ -92,7 +92,6 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
     event ProtocolPerformanceFeeUpdated(uint16 protocolPerformanceFeeBps);
 
     error FeeTooHigh();
-    error SwapAmountExceedsBalance();
 
     constructor(
         address _owner,
