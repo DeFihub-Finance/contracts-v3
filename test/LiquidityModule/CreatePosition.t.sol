@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
+import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
 import {TestERC20} from "../utils/TestERC20.sol";
 import {UniswapV3Helper} from "../utils/UniswapV3Helper.sol";
@@ -95,15 +96,35 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
     }
 
     function test_createPosition_reverts_inputAmountLessThanTotalAllocations() public {
-        CreateInvestmentParams[] memory investmentParams = new CreateInvestmentParams[](1);
-        
+        CreateInvestmentParams[] memory investmentParams = new CreateInvestmentParams[](availablePools.length);
+
+        for (uint i; i < investmentParams.length; ++i) {
+            IUniswapV3Pool pool = _getPoolFromNumber(i);
+
+            int24 tickSpacing = pool.tickSpacing();
+            (uint160 sqrtPriceX96, int24 currentTick,,,,,) = pool.slot0();
+
+            // Position must be in range, otherwise it will revert with insufficient balance
+            int24 _tickLower = UniswapV3Helper.alignTick(currentTick - tickSpacing, tickSpacing);
+            int24 _tickUpper = UniswapV3Helper.alignTick(currentTick + tickSpacing, tickSpacing);
+
+            investmentParams[i] = CreateInvestmentParams({
+                tickLower: _tickLower,
+                tickUpper: _tickUpper,
+                allocatedAmount: usdc.usdToAmount(10 ether), // $10 in USDC
+                liquidityDeltaMax: _getMaxLiquidityFromRange(
+                    _tickLower,
+                    _tickUpper,
+                    tickSpacing,
+                    sqrtPriceX96
+                )
+            });
+        }
+
         (
             uint inputAmount,
             Liquidity.Investment[] memory investments
-        ) = _createLiquidityInvestments(
-            usdc,
-            _boundCreateInvestmentParams(usdc, investmentParams)
-        );
+        ) = _createLiquidityInvestments(usdc, investmentParams);
 
         inputAmount -= 1; // Subtract to make it less than total allocations
 
