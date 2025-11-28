@@ -1,15 +1,6 @@
 # DeFihub Contracts
 
-## TLDR
-
 This repository contains the core smart contracts for the DeFihub v3 protocol - a modular DeFi investment platform built on Solidity.
-
-- **NFTs represent positions** - ERC721 tokens are investment positions, not just collectibles
-- **Modular architecture** - Abstract bases provide reusable functionality
-- **Multiple strategies/products** - Buy (multi-token purchase), DCA (automated swaps), Liquidity (LP provision), Strategy (meta-composition)
-- **Fee distribution** - Fee distribution system rewarding strategists, referrers, and protocol
-- **Composability** - Strategy module can combine any products into unified positions
-- **Safety** - Input validation, access control, and support for fee-on-transfer tokens
 
 ## Directory Structure
 
