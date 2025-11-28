@@ -92,13 +92,15 @@ abstract contract LiquidityTestHelpers is Test, Deployers {
         for (uint i; i < params.length; ++i) {
             CreateInvestmentParams memory _positionParams = params[i];
 
-            investments[i] = _createLiquidityInvestment(
+            Liquidity.Investment memory investment = _createLiquidityInvestment(
                 inputToken,
                 _getPoolFromNumber(i),
                 _positionParams
             );
 
-            totalAmount += _positionParams.allocatedAmount;
+            investments[i] = investment;
+
+            totalAmount += investment.swapAmount0 + investment.swapAmount1;
         }
     }
 
