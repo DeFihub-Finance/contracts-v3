@@ -7,7 +7,6 @@ import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
-import {SafeCast} from "../utils/SafeCast.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Deployers} from "../utils/Deployers.sol";
 import {TestERC20} from "../utils/TestERC20.sol";
@@ -22,14 +21,11 @@ import {INonfungiblePositionManager} from "../../external/interfaces/INonfungibl
 struct CreateInvestmentParams {
     int24 tickLower;
     int24 tickUpper;
-    int liquidityDeltaMax;
+    uint128 liquidityDeltaMax;
     uint allocatedAmount;
 }
 
 abstract contract LiquidityTestHelpers is Test, Deployers {
-    using SafeCast for int;
-    using SafeCast for uint;
-
     // Maximum number of investments in a liquidty position for fuzz testing
     uint8 internal constant MAX_INVESTMENTS = 20;
 
@@ -123,7 +119,7 @@ abstract contract LiquidityTestHelpers is Test, Deployers {
             pool,
             params.tickLower,
             params.tickUpper,
-            params.liquidityDeltaMax.toUint128()
+            params.liquidityDeltaMax
         );
 
         uint _swapAmount0 = inputToken.usdToAmount(_token0.amountToUsd(amount0));
@@ -239,7 +235,7 @@ abstract contract LiquidityTestHelpers is Test, Deployers {
             sqrtPriceX96,
             TickMath.getSqrtRatioAtTick(params.tickLower),
             TickMath.getSqrtRatioAtTick(params.tickUpper),
-            params.liquidityDeltaMax.toUint128()
+            params.liquidityDeltaMax
         );
 
         uint maxLiquidityUsd = token0.amountToUsd(amount0Max) + token1.amountToUsd(amount1Max);
@@ -264,35 +260,26 @@ abstract contract LiquidityTestHelpers is Test, Deployers {
         int24 tickUpper,
         int24 tickSpacing,
         uint160 sqrtPriceX96
-    ) internal pure returns (int) {
+    ) internal pure returns (uint128) {
         // Get max amount0 and amount1 that can be deposited at this range.
         (uint maxAmount0, uint maxAmount1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96,
             TickMath.getSqrtRatioAtTick(tickLower),
             TickMath.getSqrtRatioAtTick(tickUpper),
-            uint128(type(int128).max)
+            type(uint128).max
         );
 
-        // If the range allows a deposit of more then int128.max in any token,
-        // then we cap it at int128.max to avoid overflows.
-        uint limitAmount = uint(type(uint128).max / 2);
-
-        maxAmount0 = maxAmount0 > limitAmount ? limitAmount : maxAmount0;
-        maxAmount1 = maxAmount1 > limitAmount ? limitAmount : maxAmount1;
-
-        int liquidityMaxByAmounts = uint(
-            LiquidityAmounts.getLiquidityForAmounts(
-                sqrtPriceX96,
-                TickMath.getSqrtRatioAtTick(tickLower),
-                TickMath.getSqrtRatioAtTick(tickUpper),
-                maxAmount0,
-                maxAmount1
-            )
-        ).toInt256();
+        uint128 liquidityMaxByAmounts = LiquidityAmounts.getLiquidityForAmounts(
+            sqrtPriceX96,
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            maxAmount0,
+            maxAmount1
+        );
 
         vm.assume(liquidityMaxByAmounts != 0);
 
-        int liquidityMaxByTickSpacing = int(uint(Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing)));
+        uint128 liquidityMaxByTickSpacing = Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
 
         // Return either the liquidity by amounts or the liquidity by tick spacing
         return liquidityMaxByAmounts > liquidityMaxByTickSpacing
