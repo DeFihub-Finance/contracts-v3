@@ -16,7 +16,7 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
     }
 
     function test_fuzz_createPosition(
-        uint8 rand,
+        uint rand,
         CreateInvestmentParams[] memory params
     ) public {
         TestERC20 inputToken = availableTokens[rand % availableTokens.length];
