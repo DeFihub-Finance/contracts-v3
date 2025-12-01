@@ -6,6 +6,6 @@ library Slippage {
         uint amount,
         uint16 slippageBps
     ) internal pure returns (uint) {
-        return amount - (amount * slippageBps) / 1e4;
+        return amount - (amount * slippageBps / 1e4);
     }
 }
