@@ -4,19 +4,16 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {Constants} from "../utils/Constants.sol";
-import {Deployer} from "../utils/Deployer.sol";
 import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
+import {BaseProductTestHelpers} from "../utils/BaseProductTestHelpers.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-abstract contract BuyModuleTestHelpers is Test, Deployer {
-    /// Maximum number of investments in a buy position for fuzz testing
-    uint8 internal constant MAX_INVESTMENTS = 20;
-
+abstract contract BuyModuleTestHelpers is Test, BaseProductTestHelpers {
     /// @dev Fuzz helper to create a buy position with bounded allocated amounts
     /// @param inputToken Input token of the buy position
     /// @param allocatedAmounts Allocated amounts for each investment
@@ -72,7 +69,7 @@ abstract contract BuyModuleTestHelpers is Test, Deployer {
             TestERC20 buyToken = _getTokenFromNumber(i);
 
             investments[i] = Buy.Investment({
-                swap: _getSwap(_allocatedAmount, inputToken, buyToken),
+                swap: _getSwap(_allocatedAmount, inputToken, buyToken, address(buy)),
                 token: buyToken,
                 allocatedAmount: _allocatedAmount
             });
@@ -120,30 +117,6 @@ abstract contract BuyModuleTestHelpers is Test, Deployer {
                     strategist: owner,
                     externalRef: 1
                 })
-            })
-        );
-    }
-
-    /// @dev Helper to get a HubRouter swap
-    /// @param _amount Amount to be swapped
-    /// @param _inputToken Input token of the swap
-    /// @param _outputToken Output token of the swap
-    /// @return A HubSwap struct data
-    function _getSwap(
-        uint _amount,
-        TestERC20 _inputToken,
-        TestERC20 _outputToken
-    ) internal returns (HubRouter.HubSwap memory) {
-        return SwapHelper.getHubSwapExactInput(
-            SwapHelper.GetHubSwapParams({
-                slippageBps: Constants.ONE_PERCENT_BPS,
-                recipient: address(buy),
-                amount: _amount,
-                inputToken: _inputToken,
-                outputToken: _outputToken,
-                quoter: quoterUniV3,
-                router: universalRouter,
-                path: PathUniswapV3.init(_inputToken).addHop(Constants.FEE_MEDIUM, _outputToken)
             })
         );
     }

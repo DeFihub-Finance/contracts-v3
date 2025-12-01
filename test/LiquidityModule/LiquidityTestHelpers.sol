@@ -14,6 +14,7 @@ import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
 import {UniswapV3Helper} from "../utils/exchange/UniswapV3Helper.sol";
+import {BaseProductTestHelpers} from "../utils/BaseProductTestHelpers.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
@@ -26,10 +27,7 @@ struct CreateInvestmentParams {
     uint allocatedAmount;
 }
 
-abstract contract LiquidityTestHelpers is Test, Deployer {
-    // Maximum number of investments in a liquidty position for fuzz testing
-    uint8 internal constant MAX_INVESTMENTS = 20;
-
+abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
     /// @dev Helper to create a liquidity position
     /// @param inputAmount Input amount of the liquidity position
     /// @param inputToken Input token of the liquidity position
@@ -133,8 +131,8 @@ abstract contract LiquidityTestHelpers is Test, Deployer {
             fee: pool.fee(),
             tickLower: params.tickLower,
             tickUpper: params.tickUpper,
-            swap0: _getSwap(_swapAmount0, inputToken, _token0),
-            swap1: _getSwap(_swapAmount1, inputToken, _token1),
+            swap0: _getSwap(_swapAmount0, inputToken, _token0, address(liquidity)),
+            swap1: _getSwap(_swapAmount1, inputToken, _token1, address(liquidity)),
             swapAmount0: _swapAmount0,
             swapAmount1: _swapAmount1,
             minAmount0: Slippage.deductSlippage(amount0, Constants.ONE_PERCENT_BPS),
@@ -285,30 +283,6 @@ abstract contract LiquidityTestHelpers is Test, Deployer {
         return liquidityMaxByAmounts > liquidityMaxByTickSpacing
             ? liquidityMaxByTickSpacing
             : liquidityMaxByAmounts;
-    }
-
-    /// @dev Helper to get a HubRouter swap
-    /// @param _amount Amount to be swapped
-    /// @param _inputToken Input token of the swap
-    /// @param _outputToken Output token of the swap
-    /// @return A HubSwap struct data
-    function _getSwap(
-        uint _amount,
-        TestERC20 _inputToken,
-        TestERC20 _outputToken
-    ) internal returns (HubRouter.HubSwap memory) {
-        return SwapHelper.getHubSwapExactInput(
-            SwapHelper.GetHubSwapParams({
-                slippageBps: Constants.ONE_PERCENT_BPS,
-                recipient: address(liquidity),
-                amount: _amount,
-                inputToken: _inputToken,
-                outputToken: _outputToken,
-                quoter: quoterUniV3,
-                router: universalRouter,
-                path: PathUniswapV3.init(_inputToken).addHop(Constants.FEE_MEDIUM, _outputToken)
-            })
-        );
     }
 
     function _getPoolFromNumber(uint _number) internal view returns (IUniswapV3Pool) {
