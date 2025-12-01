@@ -7,6 +7,7 @@ import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
+import {Slippage} from "../utils/Slippage.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Deployer} from "../utils/Deployer.sol";
 import {TestERC20} from "../utils/TestERC20.sol";
@@ -136,9 +137,8 @@ abstract contract LiquidityTestHelpers is Test, Deployer {
             swap1: _getSwap(_swapAmount1, inputToken, _token1),
             swapAmount0: _swapAmount0,
             swapAmount1: _swapAmount1,
-            // TODO create helper to deduct slippage
-            minAmount0: amount0 - (amount0 * Constants.ONE_PERCENT_BPS / 1e4),
-            minAmount1: amount1 - (amount1 * Constants.ONE_PERCENT_BPS / 1e4)
+            minAmount0: Slippage.deductSlippage(amount0, Constants.ONE_PERCENT_BPS),
+            minAmount1: Slippage.deductSlippage(amount1, Constants.ONE_PERCENT_BPS)
         });
     }
 

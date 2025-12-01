@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 
+import {Slippage} from "./Slippage.sol";
 import {Path} from "./PathUniswapV3.sol";
 import {Constants} from "./Constants.sol";
 import {HubSwapPlanner} from "./HubSwapPlanner.sol";
@@ -92,12 +93,12 @@ library SwapHelper {
         IQuoter quoter,
         uint16 slippageBps
     ) internal returns (uint) {
-        uint output = quoter.quoteExactInput(
-            abi.encodePacked(inputToken, Constants.FEE_MEDIUM, outputToken),
-            amount
+        return Slippage.deductSlippage(
+            quoter.quoteExactInput(
+                abi.encodePacked(inputToken, Constants.FEE_MEDIUM, outputToken),
+                amount
+            ),
+            slippageBps
         );
-
-        // Deduct slippage
-        return output - (output * slippageBps / 1e4);
     }
 }
