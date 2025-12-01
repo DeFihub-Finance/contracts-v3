@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {Constants} from "../utils/Constants.sol";
-import {Deployers} from "../utils/Deployers.sol";
+import {Deployer} from "../utils/Deployer.sol";
 import {TestERC20} from "../utils/TestERC20.sol";
 import {SwapHelper} from "../utils/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
@@ -13,7 +13,7 @@ import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-abstract contract BuyModuleTestHelpers is Test, Deployers {
+abstract contract BuyModuleTestHelpers is Test, Deployer {
     /// Maximum number of investments in a buy position for fuzz testing
     uint8 internal constant MAX_INVESTMENTS = 20;
 

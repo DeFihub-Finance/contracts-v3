@@ -8,7 +8,7 @@ import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Po
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
 import {Constants} from "../utils/Constants.sol";
-import {Deployers} from "../utils/Deployers.sol";
+import {Deployer} from "../utils/Deployer.sol";
 import {TestERC20} from "../utils/TestERC20.sol";
 import {SwapHelper} from "../utils/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
@@ -25,7 +25,7 @@ struct CreateInvestmentParams {
     uint allocatedAmount;
 }
 
-abstract contract LiquidityTestHelpers is Test, Deployers {
+abstract contract LiquidityTestHelpers is Test, Deployer {
     // Maximum number of investments in a liquidty position for fuzz testing
     uint8 internal constant MAX_INVESTMENTS = 20;
 
