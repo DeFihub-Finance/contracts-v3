@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 
-import {TestERC20} from "../utils/TestERC20.sol";
+import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";

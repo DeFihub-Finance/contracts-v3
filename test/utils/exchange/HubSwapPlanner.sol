@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
-import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
-import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
+import {HubRouter} from "../../../contracts/libraries/HubRouter.sol";
+import {IUniversalRouter} from "../../../external/interfaces/IUniversalRouter.sol";
 
 library HubSwapPlanner {
     function init(

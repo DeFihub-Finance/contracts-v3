@@ -4,8 +4,8 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-import {TestERC20} from "../utils/TestERC20.sol";
-import {UniswapV3Helper} from "../utils/UniswapV3Helper.sol";
+import {TestERC20} from "../utils/tokens/TestERC20.sol";
+import {UniswapV3Helper} from "../utils/exchange/UniswapV3Helper.sol";
 import {LiquidityTestHelpers, CreateInvestmentParams} from "./LiquidityTestHelpers.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";

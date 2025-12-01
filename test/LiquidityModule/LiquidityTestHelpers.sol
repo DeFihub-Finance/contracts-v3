@@ -10,10 +10,10 @@ import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/Li
 import {Slippage} from "../utils/Slippage.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Deployer} from "../utils/Deployer.sol";
-import {TestERC20} from "../utils/TestERC20.sol";
-import {SwapHelper} from "../utils/SwapHelper.sol";
-import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
-import {UniswapV3Helper} from "../utils/UniswapV3Helper.sol";
+import {TestERC20} from "../utils/tokens/TestERC20.sol";
+import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
+import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
+import {UniswapV3Helper} from "../utils/exchange/UniswapV3Helper.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";

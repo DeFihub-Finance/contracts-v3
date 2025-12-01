@@ -9,9 +9,9 @@ import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Po
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
-import {Constants} from "./Constants.sol";
-import {TestERC20} from "./TestERC20.sol";
-import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
+import {Constants} from "../Constants.sol";
+import {TestERC20} from "../tokens/TestERC20.sol";
+import {INonfungiblePositionManager} from "../../../external/interfaces/INonfungiblePositionManager.sol";
 
 library UniswapV3Helper {
     uint constant internal Q192 = 1 << 192;

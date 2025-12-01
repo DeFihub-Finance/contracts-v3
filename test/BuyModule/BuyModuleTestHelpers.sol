@@ -5,10 +5,10 @@ import "forge-std/Test.sol";
 
 import {Constants} from "../utils/Constants.sol";
 import {Deployer} from "../utils/Deployer.sol";
-import {TestERC20} from "../utils/TestERC20.sol";
-import {SwapHelper} from "../utils/SwapHelper.sol";
-import {PathUniswapV3} from "../utils/PathUniswapV3.sol";
 import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
+import {TestERC20} from "../utils/tokens/TestERC20.sol";
+import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
+import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
 import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
