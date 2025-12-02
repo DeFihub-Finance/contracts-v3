@@ -4,11 +4,11 @@ pragma solidity 0.8.30;
 import "forge-std/Test.sol";
 
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
-import {BuyModuleTestHelpers} from "./BuyModuleTestHelpers.sol";
+import {BuyHelpers} from "./BuyHelpers.t.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-contract CreatePosition is Test, BuyModuleTestHelpers {
+contract CreatePosition is Test, BuyHelpers {
     function setUp() public {
         deployBaseContracts();
     }

@@ -189,6 +189,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
             Pool storage pool = _getPool(investment.poolId);
             Position[] storage positions = _tokenToPositions[_tokenId];
 
+            // dust isn't worth tracking gas-wise, but will remain locked in the contract
             uint amountPerSwap = inputAmount / investment.swaps;
             uint32 finalSwap = pool.performedSwaps + investment.swaps;
 

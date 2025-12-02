@@ -44,8 +44,6 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
     }
 
     struct ERC20Permit {
-        address owner;
-        address spender;
         uint value;
         uint deadline;
         uint8 v;
@@ -68,6 +66,7 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
     error InvalidInput();
     error InsufficientOutputAmount();
+    error InvalidModule();
 
     constructor(
         address _owner,
@@ -128,27 +127,25 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         InvestParams memory _params,
         ERC20Permit memory _permit
     ) external returns (uint tokenId) {
-        if (_permit.owner != msg.sender || _permit.spender != address(this))
-            revert Unauthorized();
-
         tokenId = _createToken();
 
-        IERC20Permit(address(_params.inputToken)).permit(
-            _permit.owner,
-            _permit.spender,
-            _permit.value,
-            _permit.deadline,
-            _permit.v,
-            _permit.r,
-            _permit.s
-        );
+        // if statement prevents permit front-running DOS
+        if (_params.inputToken.allowance(msg.sender, address(this)) < _params.inputAmount)
+            IERC20Permit(address(_params.inputToken)).permit(
+                msg.sender,
+                address(this),
+                _permit.value,
+                _permit.deadline,
+                _permit.v,
+                _permit.r,
+                _permit.s
+            );
 
         _params.inputAmount = _pullToken(_params.inputToken, _params.inputAmount);
 
         _makeInvestments(tokenId, _params);
     }
 
-    // TODO test: exploit by investing using strategy position as one of the investment modules
     function _createPosition(
         uint _tokenId,
         bytes memory _encodedInvestments
@@ -173,9 +170,11 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         for (uint i; i < _params.investments.length; ++i) {
             Investment memory investment = _params.investments[i];
 
+            if (address(investment.module) == address(this))
+                revert InvalidModule();
+
             totalAllocatedAmount += investment.allocatedAmount;
 
-            // this is easily exploited by not consuming tokens in the module
             _params.inputToken.safeIncreaseAllowance(address(investment.module), investment.allocatedAmount);
 
             _tokenToPositions[_tokenId].push(Position({
@@ -189,6 +188,9 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
 
     function _collectPosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
+
+        if (data.length != _tokenToPositions[_tokenId].length)
+            revert InvalidInput();
 
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
@@ -248,6 +250,9 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
     function _closePosition(address _beneficiary, uint _tokenId, bytes memory _data) internal override {
         bytes[] memory data = abi.decode(_data, (bytes[]));
 
+        if (data.length != _tokenToPositions[_tokenId].length)
+            revert InvalidInput();
+
         for (uint i; i < _tokenToPositions[_tokenId].length; ++i) {
             Position memory position = _tokenToPositions[_tokenId][i];
 
@@ -280,7 +285,7 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
-        uint protocolFee = (hasReferrer ? protocolFeeBps + referrerFeeBps : protocolFeeBps) * _inputAmount / 1e4;
+        uint protocolFee = (hasReferrer ? protocolFeeBps : protocolFeeBps + referrerFeeBps) * _inputAmount / 1e4;
         rewards[_getTreasury()][_token] += protocolFee;
         remainingAmount -= protocolFee;
         emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);

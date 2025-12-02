@@ -13,7 +13,7 @@ import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 
-abstract contract BuyModuleTestHelpers is Test, BaseProductTestHelpers {
+abstract contract BuyHelpers is Test, BaseProductTestHelpers {
     /// @dev Fuzz helper to create a buy position with bounded allocated amounts
     /// @param inputToken Input token of the buy position
     /// @param allocatedAmounts Allocated amounts for each investment
