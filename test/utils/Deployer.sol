@@ -10,10 +10,10 @@ import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV
 import {RouterParameters} from "@uniswap/universal-router/contracts/types/RouterParameters.sol";
 
 import {Constants} from "./Constants.sol";
-import {UniswapV3Helper} from "./UniswapV3Helper.sol";
-import {TestWETH} from "./TestWETH.sol";
-import {TestERC20} from "./TestERC20.sol";
-import {TokenPrices} from "./TokenPrices.sol";
+import {UniswapV3Helper} from "./exchange/UniswapV3Helper.sol";
+import {TestWETH} from "./tokens/TestWETH.sol";
+import {TestERC20} from "./tokens/TestERC20.sol";
+import {TokenPrices} from "./tokens/TokenPrices.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {Strategy} from "../../contracts/products/Strategy.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
@@ -21,7 +21,7 @@ import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 import {IWETH} from "../../external/interfaces/IWETH.sol";
 
-abstract contract Deployers is Test {
+abstract contract Deployer is Test {
     // Accounts
     address public immutable owner = makeAddr("OWNER");
     address public immutable treasury = makeAddr("TREASURY");
@@ -49,6 +49,7 @@ abstract contract Deployers is Test {
     IUniswapV3Pool public usdcWethPool;
     IUniswapV3Pool public usdcWbtcPool;
     IUniswapV3Pool public wethWbtcPool;
+    IUniswapV3Pool[] public availablePools;
 
     // Fees
     uint16 public immutable protocolFeeBps = 50; // 0.5%
@@ -189,6 +190,8 @@ abstract contract Deployers is Test {
                 owner
             )
         );
+
+        availablePools = [usdcWethPool, usdcWbtcPool, wethWbtcPool];
     }
 
     function _mintAndApprove(

@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {TestERC20} from "./TestERC20.sol";
+import {TestERC20} from "./tokens/TestERC20.sol";
 
 struct BalanceMap {
     string identifier;
