@@ -1,9 +1,13 @@
+import fs from "fs";
 import type { HardhatUserConfig } from "hardhat/config";
 
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 import { configVariable } from "hardhat/config";
 
-process.loadEnvFile(".env")
+const ENV_FILE = ".env";
+
+if (fs.existsSync(ENV_FILE))
+  process.loadEnvFile(ENV_FILE);
 
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
