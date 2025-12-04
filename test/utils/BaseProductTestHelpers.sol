@@ -37,4 +37,12 @@ abstract contract BaseProductTestHelpers is Deployer {
             })
         );
     }
+
+    /// @dev Helper to get a token from a number
+    /// The number is then mapped to a position in the `availableTokens` array.
+    /// @param _number Number to get the token from
+    /// @return A TestERC20 token
+    function _getTokenFromNumber(uint _number) internal view returns (TestERC20) {
+        return availableTokens[_number % availableTokens.length];
+    }
 }
