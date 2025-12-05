@@ -333,7 +333,7 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             withdrawalAmounts[i] = Liquidity.PairAmounts({
                 amount0: split0.userAmount,
                 amount1: split1.userAmount
-            });   
+            });
         }
     }
 
