@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Tick} from "@uniswap/v3-core-0.8/contracts/libraries/Tick.sol";
 import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
@@ -10,6 +11,7 @@ import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/Li
 import {Slippage} from "../utils/Slippage.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Deployer} from "../utils/Deployer.sol";
+import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
 import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
@@ -27,7 +29,32 @@ struct CreateInvestmentParams {
     uint allocatedAmount;
 }
 
+struct RewardSplitMap {
+    BalanceMap user;
+    BalanceMap treasury;
+    BalanceMap strategist;
+}
+
 abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
+    /// @dev Fuzz helper to create a liquidity position with bounded params
+    /// @param inputToken Input token of the liquidity position
+    /// @param params Array of CreateInvestmentParams struct
+    /// @return tokenId The ID of the created liquidity position
+    function _createFuzzyLiquidityPosition(
+        TestERC20 inputToken,
+        CreateInvestmentParams[] memory params
+    ) internal returns (uint tokenId) {
+        (
+            uint totalAmount,
+            Liquidity.Investment[] memory investments
+        ) = _createLiquidityInvestments(
+            inputToken,
+            _boundCreateInvestmentParams(inputToken, params)
+        );
+
+        return _createLiquidityPosition(totalAmount, inputToken, investments);
+    }
+
     /// @dev Helper to create a liquidity position
     /// @param inputAmount Input amount of the liquidity position
     /// @param inputToken Input token of the liquidity position
@@ -285,6 +312,105 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             : liquidityMaxByAmounts;
     }
 
+
+    /// @dev Helper to get the withdrawal amounts of a liquidity position.
+    /// @param tokenId ID of the liquidity position
+    /// @return withdrawalAmounts Array of withdrawal pair amounts
+    function _getLiquidityWithdrawalAmounts(
+        uint tokenId
+    ) internal view returns (Liquidity.PairAmounts[] memory withdrawalAmounts) {
+        Liquidity.Position memory position = liquidity.getPositions(tokenId);
+        Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
+
+        withdrawalAmounts = new Liquidity.PairAmounts[](dexPositions.length);
+
+        for (uint i; i < dexPositions.length; ++i) {
+            (
+                Liquidity.RewardSplit memory split0,
+                Liquidity.RewardSplit memory split1
+            ) = _getRewardSplits(position.strategistPerformanceFeeBps, dexPositions[i]);
+
+            withdrawalAmounts[i] = Liquidity.PairAmounts({
+                amount0: split0.userAmount,
+                amount1: split1.userAmount
+            });   
+        }
+    }
+
+    /// @dev Helper to get reward splits for a dex position
+    /// @param performanceFee Performance fee in bps of the position
+    /// @param dexPosition Dex position to get the reward splits from
+    /// @return split0 Reward split for token0
+    /// @return split1 Reward split for token1
+    function _getRewardSplits(
+        uint16 performanceFee,
+        Liquidity.DexPosition memory dexPosition
+    ) internal view returns (Liquidity.RewardSplit memory split0, Liquidity.RewardSplit memory split1) {
+        (uint fee0, uint fee1) = UniswapV3Helper.getPositionFees(
+            dexPosition.lpTokenId,
+            dexPosition.positionManager
+        );
+
+        split0 = _calculateRewardSplit(fee0, performanceFee);
+        split1 = _calculateRewardSplit(fee1, performanceFee);
+    }
+
+    /// @dev Helper to calculate token reward split on collect/close position
+    /// @param _amount Token amount
+    /// @param _performanceFeeBps Performance fee in bps of the position
+    /// @return A RewardSplit struct
+    function _calculateRewardSplit(
+        uint _amount,
+        uint16 _performanceFeeBps
+    ) internal pure returns (Liquidity.RewardSplit memory) {
+        uint strategistAmount = (_amount * _performanceFeeBps) / 1e4;
+        uint treasuryAmount = (_amount * strategistFeeBps) / 1e4;
+
+        return Liquidity.RewardSplit({
+            userAmount: _amount - strategistAmount - treasuryAmount,
+            strategistAmount: strategistAmount,
+            treasuryAmount: treasuryAmount
+        });
+    }
+
+    /// @dev Helper to get reward splits map grouped by token for a liquidity position
+    /// @param position Liquidity position to get the reward splits from
+    /// @return rewardSplitMap Reward splits map grouped by token
+    function _getRewardSplitMap(
+        Liquidity.Position memory position
+    ) internal returns (RewardSplitMap memory rewardSplitMap) {
+        rewardSplitMap = RewardSplitMap({
+            user: BalanceMapper.init("userSplitMap"),
+            treasury: BalanceMapper.init("treasurySplitMap"),
+            strategist: BalanceMapper.init("strategistSplitMap")
+        });
+
+        Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
+
+        for (uint i; i < dexPositions.length; ++i) {
+            IERC20 token0 = dexPositions[i].token0;
+            IERC20 token1 = dexPositions[i].token1;
+
+            (
+                Liquidity.RewardSplit memory split0,
+                Liquidity.RewardSplit memory split1
+            ) = _getRewardSplits(position.strategistPerformanceFeeBps, dexPositions[i]);
+
+            rewardSplitMap.user.add(token0, split0.userAmount);
+            rewardSplitMap.user.add(token1, split1.userAmount);
+
+            rewardSplitMap.treasury.add(token0, split0.treasuryAmount);
+            rewardSplitMap.treasury.add(token1, split1.treasuryAmount);
+
+            rewardSplitMap.strategist.add(token0, split0.strategistAmount);
+            rewardSplitMap.strategist.add(token1, split1.strategistAmount);
+        }
+    }
+
+    /// @dev Helper to get a pool from a number
+    /// The number is then mapped to a position in the `availablePools` array.
+    /// @param _number Number to get the pool from
+    /// @return A IUniswapV3Pool pool
     function _getPoolFromNumber(uint _number) internal view returns (IUniswapV3Pool) {
         return availablePools[_number % availablePools.length];
     }
