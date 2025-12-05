@@ -52,12 +52,15 @@ contract CollectPositionTest is Test, LiquidityTestHelpers {
             TestERC20 token = availableTokens[i];
 
             uint userBalanceDelta = userBalancesAfter[i] - userBalancesBefore[i];
-            uint treasuryBalanceDelta = treasuryRewardsAfter[i] - treasuryRewardsBefore[i];
-            uint strategistBalanceDelta = strategistRewardsAfter[i] - strategistRewardsBefore[i];
+            uint treasuryRewardsDelta = treasuryRewardsAfter[i] - treasuryRewardsBefore[i];
+            uint strategistRewardsDelta = strategistRewardsAfter[i] - strategistRewardsBefore[i];
 
+            // Assert user received exact amount from all dex positions with same token
             assertEq(userBalanceDelta, rewardSplitMap.user.get(token));
-            assertEq(treasuryBalanceDelta, rewardSplitMap.treasury.get(token));
-            assertEq(strategistBalanceDelta, rewardSplitMap.strategist.get(token));
+
+            // Assert treasury and strategist received rewards correctly
+            assertEq(treasuryRewardsDelta, rewardSplitMap.treasury.get(token));
+            assertEq(strategistRewardsDelta, rewardSplitMap.strategist.get(token));
         }
     }
 
