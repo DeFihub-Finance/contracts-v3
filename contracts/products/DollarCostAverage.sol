@@ -72,7 +72,6 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
     uint16 public swapFeeBps;
 
     event PoolCreated(uint poolId, IERC20 inputToken, IERC20 outputToken);
-    event PositionCreated(address owner, uint tokenId, uint numberOfPositions);
     event PositionCollected(address owner, address beneficiary, uint tokenId, uint[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, uint[2][] withdrawnAmounts);
     event Swap(PoolIdentifier poolId, uint amountIn, uint amountOut);
@@ -208,8 +207,6 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         }
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
-
-        emit PositionCreated(msg.sender, _tokenId, params.investments.length);
     }
 
     function _collectPosition(address _beneficiary, uint _tokenId, bytes memory) internal override {
