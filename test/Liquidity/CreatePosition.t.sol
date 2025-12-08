@@ -46,7 +46,6 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
 
             (uint amount0, uint amount1) = UniswapV3Helper.getPositionTokenAmounts(
                 dexPosition.lpTokenId,
-                factoryUniV3,
                 dexPosition.positionManager
             );
 
