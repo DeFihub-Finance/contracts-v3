@@ -364,7 +364,7 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         uint16 _performanceFeeBps
     ) internal pure returns (Liquidity.RewardSplit memory) {
         uint strategistAmount = (_amount * _performanceFeeBps) / 1e4;
-        uint treasuryAmount = (_amount * strategistFeeBps) / 1e4;
+        uint treasuryAmount = (_amount * protocolFeeBps) / 1e4;
 
         return Liquidity.RewardSplit({
             userAmount: _amount - strategistAmount - treasuryAmount,
