@@ -162,8 +162,8 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             swap1: _getSwap(_swapAmount1, inputToken, _token1, address(liquidity)),
             swapAmount0: _swapAmount0,
             swapAmount1: _swapAmount1,
-            minAmount0: Slippage.deductSlippage(amount0, Constants.ONE_PERCENT_BPS),
-            minAmount1: Slippage.deductSlippage(amount1, Constants.ONE_PERCENT_BPS)
+            minAmount0: Slippage.deductSlippageDynamic(amount0, _token0),
+            minAmount1: Slippage.deductSlippageDynamic(amount1, _token1)
         });
     }
 

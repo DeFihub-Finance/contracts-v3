@@ -9,6 +9,8 @@ library Constants {
     bytes32 public constant ZERO_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
     uint16 public constant ONE_PERCENT_BPS = 100;
+    uint16 public constant THREE_PERCENT_BPS = 300;
+    uint16 public constant FIVE_PERCENT_BPS = 500;
 
     // Pool fees
     uint24 public constant FEE_LOW = 500;
