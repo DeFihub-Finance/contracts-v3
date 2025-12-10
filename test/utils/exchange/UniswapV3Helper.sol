@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
-import "forge-std/Test.sol";
-
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Tick} from "@uniswap/v3-core-0.8/contracts/libraries/Tick.sol";
 import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
-import {FixedPoint128} from "@uniswap/v3-core/contracts/libraries/FixedPoint128.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
@@ -168,119 +164,5 @@ library UniswapV3Helper {
             TickMath.getSqrtRatioAtTick(tickUpper),
             liquidity
         );
-    }
-
-    function getPositionFees(
-        uint _tokenId,
-        INonfungiblePositionManager _positionManager
-    ) internal view returns (uint amount0, uint amount1) {
-        (
-            ,,
-            address token0,
-            address token1,
-            uint24 fee,
-            int24 tickLower,
-            int24 tickUpper,
-            uint128 liquidity,
-            uint feeGrowthInside0LastX128,
-            uint feeGrowthInside1LastX128,
-            uint128 tokensOwed0,
-            uint128 tokensOwed1
-        ) = _positionManager.positions(_tokenId);
-
-        IUniswapV3Pool pool = IUniswapV3Pool(IUniswapV3Factory(_positionManager.factory()).getPool(token0, token1, fee));
-
-        // We need to calculate pending fees since staticcall doesn't work
-        (uint128 pending0, uint128 pending1) = calculatePositionFees(
-            pool,
-            tickLower,
-            tickUpper,
-            liquidity,
-            feeGrowthInside0LastX128,
-            feeGrowthInside1LastX128
-        );
-
-        amount0 = tokensOwed0 + pending0;
-        amount1 = tokensOwed1 + pending1;
-    }
-
-    function calculatePositionFees(
-        IUniswapV3Pool pool,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity,
-        uint feeGrowthInside0LastX128,
-        uint feeGrowthInside1LastX128
-    ) internal view returns (uint128 amount0, uint128 amount1) {
-        (,int24 tickCurrent,,,,,) = pool.slot0();
-        uint feeGrowthGlobal0X128 = pool.feeGrowthGlobal0X128();
-        uint feeGrowthGlobal1X128 = pool.feeGrowthGlobal1X128();
-
-        (uint feeGrowthInside0X128, uint feeGrowthInside1X128) = getFeeGrowthInside(
-            pool,
-            tickLower,
-            tickUpper,
-            tickCurrent,
-            feeGrowthGlobal0X128,
-            feeGrowthGlobal1X128
-        );
-
-        unchecked {
-            amount0 = uint128(
-                Math.mulDiv(
-                    feeGrowthInside0X128 - feeGrowthInside0LastX128,
-                    liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-
-            amount1 = uint128(
-                Math.mulDiv(
-                    feeGrowthInside1X128 - feeGrowthInside1LastX128,
-                    liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-        }
-    }
-
-    // Adapted from UniswapV3 `Tick.sol` library
-    function getFeeGrowthInside(
-        IUniswapV3Pool pool,
-        int24 tickLower,
-        int24 tickUpper,
-        int24 tickCurrent,
-        uint feeGrowthGlobal0X128,
-        uint feeGrowthGlobal1X128
-    ) internal view returns (uint feeGrowthInside0X128, uint feeGrowthInside1X128) {
-        unchecked {
-            (,,uint feeGrowthOutside0LowerX128, uint feeGrowthOutside1LowerX128,,,,) = pool.ticks(tickLower);
-            (,,uint feeGrowthOutside0UpperX128, uint feeGrowthOutside1UpperX128,,,,) = pool.ticks(tickUpper);
-
-            uint feeGrowthBelow0X128;
-            uint feeGrowthBelow1X128;
-
-            if (tickCurrent >= tickLower) {
-                feeGrowthBelow0X128 = feeGrowthOutside0LowerX128;
-                feeGrowthBelow1X128 = feeGrowthOutside1LowerX128;
-            } else {
-                feeGrowthBelow0X128 = feeGrowthGlobal0X128 - feeGrowthOutside0LowerX128;
-                feeGrowthBelow1X128 = feeGrowthGlobal1X128 - feeGrowthOutside1LowerX128;
-            }
-
-            uint feeGrowthAbove0X128;
-            uint feeGrowthAbove1X128;
-
-            if (tickCurrent < tickUpper) {
-                feeGrowthAbove0X128 = feeGrowthOutside0UpperX128;
-                feeGrowthAbove1X128 = feeGrowthOutside1UpperX128;
-            } else {
-                feeGrowthAbove0X128 = feeGrowthGlobal0X128 - feeGrowthOutside0UpperX128;
-                feeGrowthAbove1X128 = feeGrowthGlobal1X128 - feeGrowthOutside1UpperX128;
-            }
-
-            feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthBelow0X128 - feeGrowthAbove0X128;
-            feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthBelow1X128 - feeGrowthAbove1X128;
-        }
     }
 }
