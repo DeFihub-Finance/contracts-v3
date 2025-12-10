@@ -22,23 +22,24 @@ contract CollectPositionTest is Test, LiquidityTestHelpers {
     ) public {
         TestERC20 inputToken = _getTokenFromNumber(rand);
         uint tokenId = _createFuzzyLiquidityPosition(inputToken, params);
-        Liquidity.Position memory position = liquidity.getPositions(tokenId);
 
         // Make swaps to generate fees
         _makeSwaps(inputToken);
 
+        Liquidity.Position memory position = liquidity.getPositions(tokenId);
+        Liquidity.PairAmounts[] memory feeAmounts = _getAllPositionFees(position.dexPositions);
+
         address strategist = position.strategy.strategist;
-        RewardSplitMap memory rewardSplitMap = _getRewardSplitMap(position);
+        RewardSplitMap memory rewardSplitMap = _getRewardSplitMap(position, feeAmounts);
 
         uint[] memory userBalancesBefore = Balances.getAccountBalances(account0, availableTokens);
         uint[] memory treasuryRewardsBefore = _getTreasuryRewards(liquidity);
         uint[] memory strategistRewardsBefore = _getAccountRewards(strategist, liquidity);
 
-        // Must call _expectEmitFeeDistributedEvents before since it does an external call
-        _expectEmitFeeDistributedEvents(tokenId, position);
-        _expectEmitPositionCollected(tokenId);
-
         vm.startPrank(account0);
+
+        _expectEmitFeeDistributedEvents(tokenId, position, feeAmounts);
+        _expectEmitPositionCollected(tokenId, position, feeAmounts);
 
         liquidity.collectPosition(account0, tokenId, new bytes(0));
 
@@ -51,16 +52,12 @@ contract CollectPositionTest is Test, LiquidityTestHelpers {
         for (uint i; i < availableTokens.length; ++i) {
             TestERC20 token = availableTokens[i];
 
-            uint userBalanceDelta = userBalancesAfter[i] - userBalancesBefore[i];
-            uint treasuryRewardsDelta = treasuryRewardsAfter[i] - treasuryRewardsBefore[i];
-            uint strategistRewardsDelta = strategistRewardsAfter[i] - strategistRewardsBefore[i];
+            // Assert user received exact amounts from all dex positions
+            assertEq(userBalancesAfter[i] - userBalancesBefore[i], rewardSplitMap.user.get(token));
 
-            // Assert user received exact amount from all dex positions with same token
-            assertEq(userBalanceDelta, rewardSplitMap.user.get(token));
-
-            // Assert treasury and strategist received rewards correctly
-            assertEq(treasuryRewardsDelta, rewardSplitMap.treasury.get(token));
-            assertEq(strategistRewardsDelta, rewardSplitMap.strategist.get(token));
+            // Assert treasury and strategist received rewards
+            assertEq(treasuryRewardsAfter[i] - treasuryRewardsBefore[i], rewardSplitMap.treasury.get(token));
+            assertEq(strategistRewardsAfter[i] - strategistRewardsBefore[i], rewardSplitMap.strategist.get(token));
         }
     }
 
@@ -97,38 +94,27 @@ contract CollectPositionTest is Test, LiquidityTestHelpers {
         vm.stopPrank();
     }
 
-    function _expectEmitPositionCollected(uint tokenId) internal {
+    function _expectEmitPositionCollected(
+        uint tokenId,
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
+    ) internal {
         vm.expectEmit(false, false, false, true, address(liquidity));
         emit Liquidity.PositionCollected(
             account0,
             account0,
             tokenId,
-            _getLiquidityWithdrawalAmounts(tokenId)
+            _getLiquidityWithdrawalAmounts(position.strategistPerformanceFeeBps, feeAmounts)
         );
     }
 
     function _expectEmitFeeDistributedEvents(
         uint tokenId,
-        Liquidity.Position memory position
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
     ) internal {
         uint16 performanceFee = position.strategistPerformanceFeeBps;
-
         Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
-        Liquidity.PairAmounts[] memory feeAmounts = new Liquidity.PairAmounts[](dexPositions.length);
-
-        // We need to use a separate loop since fees are fetched from an
-        // external call and we want to assert the events only on collect which
-        // will be the next external call
-        for (uint i; i < dexPositions.length; ++i) {
-            Liquidity.DexPosition memory dexPosition = dexPositions[i];
-
-            (uint fee0, uint fee1) = UniswapV3Helper.getPositionFees(
-                dexPosition.lpTokenId,
-                dexPosition.positionManager
-            );
-
-            feeAmounts[i] = Liquidity.PairAmounts({amount0: fee0, amount1: fee1});
-        }
 
         for (uint i; i < feeAmounts.length; ++i) {
             Liquidity.PairAmounts memory fees = feeAmounts[i];

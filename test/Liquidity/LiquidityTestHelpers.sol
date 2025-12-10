@@ -9,15 +9,10 @@ import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Po
 import {LiquidityAmounts} from "@uniswap/v3-periphery-0.8/contracts/libraries/LiquidityAmounts.sol";
 
 import {Slippage} from "../utils/Slippage.sol";
-import {Constants} from "../utils/Constants.sol";
-import {Deployer} from "../utils/Deployer.sol";
-import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
-import {SwapHelper} from "../utils/exchange/SwapHelper.sol";
-import {PathUniswapV3} from "../utils/exchange/PathUniswapV3.sol";
+import {BalanceMapper, BalanceMap} from "../utils/Balances.sol";
 import {UniswapV3Helper} from "../utils/exchange/UniswapV3Helper.sol";
 import {BaseProductTestHelpers} from "../utils/BaseProductTestHelpers.sol";
-import {HubRouter} from "../../contracts/libraries/HubRouter.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
@@ -312,47 +307,58 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             : liquidityMaxByAmounts;
     }
 
+    /// @dev Helper to fees from all dex positions
+    /// @param dexPositions Array of dex positions
+    /// @return feeAmounts Array of PairAmounts struct containing the fee amounts
+    function _getAllPositionFees(
+        Liquidity.DexPosition[] memory dexPositions
+    ) internal returns (Liquidity.PairAmounts[] memory feeAmounts) {
+        feeAmounts = new Liquidity.PairAmounts[](dexPositions.length);
 
-    /// @dev Helper to get the withdrawal amounts of a liquidity position.
-    /// @param tokenId ID of the liquidity position
-    /// @return withdrawalAmounts Array of withdrawal pair amounts
-    function _getLiquidityWithdrawalAmounts(
-        uint tokenId
-    ) internal view returns (Liquidity.PairAmounts[] memory withdrawalAmounts) {
-        Liquidity.Position memory position = liquidity.getPositions(tokenId);
-        Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
+        vm.startPrank(address(liquidity));
 
-        withdrawalAmounts = new Liquidity.PairAmounts[](dexPositions.length);
+        // Take a snapshot and revert the state after checking fee amounts, in
+        // this way we can "simulate" a staticcall for a function that cannot be
+        // called with staticcall since it modifies state.
+        uint snapshotId = vm.snapshotState();
 
         for (uint i; i < dexPositions.length; ++i) {
-            (
-                Liquidity.RewardSplit memory split0,
-                Liquidity.RewardSplit memory split1
-            ) = _getRewardSplits(position.strategistPerformanceFeeBps, dexPositions[i]);
+            Liquidity.DexPosition memory dexPosition = dexPositions[i];
 
-            withdrawalAmounts[i] = Liquidity.PairAmounts({
-                amount0: split0.userAmount,
-                amount1: split1.userAmount
-            });
+            (uint _fee0, uint _fee1) = dexPosition.positionManager.collect(
+                INonfungiblePositionManager.CollectParams({
+                    tokenId: dexPosition.lpTokenId,
+                    recipient: address(0),
+                    amount0Max: type(uint128).max,
+                    amount1Max: type(uint128).max
+                })
+            );
+
+            feeAmounts[i] = Liquidity.PairAmounts({amount0: _fee0, amount1: _fee1});
         }
+
+        vm.revertToStateAndDelete(snapshotId);
+        vm.stopPrank();
     }
 
-    /// @dev Helper to get reward splits for a dex position
+    /// @dev Helper to compute user's liquidity withdrawal amounts
     /// @param performanceFee Performance fee in bps of the position
-    /// @param dexPosition Dex position to get the reward splits from
-    /// @return split0 Reward split for token0
-    /// @return split1 Reward split for token1
-    function _getRewardSplits(
+    /// @param feeAmounts Array of PairAmounts struct containing the fee amounts
+    /// @return withdrawalAmounts Array of PairAmounts struct with deducted fees
+    function _getLiquidityWithdrawalAmounts(
         uint16 performanceFee,
-        Liquidity.DexPosition memory dexPosition
-    ) internal view returns (Liquidity.RewardSplit memory split0, Liquidity.RewardSplit memory split1) {
-        (uint fee0, uint fee1) = UniswapV3Helper.getPositionFees(
-            dexPosition.lpTokenId,
-            dexPosition.positionManager
-        );
+        Liquidity.PairAmounts[] memory feeAmounts
+    ) internal pure returns (Liquidity.PairAmounts[] memory withdrawalAmounts) {
+        withdrawalAmounts = new Liquidity.PairAmounts[](feeAmounts.length);
 
-        split0 = _calculateRewardSplit(fee0, performanceFee);
-        split1 = _calculateRewardSplit(fee1, performanceFee);
+        for (uint i; i < feeAmounts.length; ++i) {
+            Liquidity.PairAmounts memory fees = feeAmounts[i];
+
+            withdrawalAmounts[i] = Liquidity.PairAmounts({
+                amount0: _calculateRewardSplit(fees.amount0, performanceFee).userAmount,
+                amount1: _calculateRewardSplit(fees.amount1, performanceFee).userAmount
+            });
+        }
     }
 
     /// @dev Helper to calculate token reward split on collect/close position
@@ -373,11 +379,13 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         });
     }
 
-    /// @dev Helper to get reward splits map grouped by token for a liquidity position
+    /// @dev Helper to get reward splits map grouped by token for a position
     /// @param position Liquidity position to get the reward splits from
+    /// @param feeAmounts PairAmounts struct containing the fee amounts
     /// @return rewardSplitMap Reward splits map grouped by token
     function _getRewardSplitMap(
-        Liquidity.Position memory position
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
     ) internal returns (RewardSplitMap memory rewardSplitMap) {
         rewardSplitMap = RewardSplitMap({
             user: BalanceMapper.init("userSplitMap"),
@@ -385,16 +393,16 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             strategist: BalanceMapper.init("strategistSplitMap")
         });
 
+        uint16 performanceFee = position.strategistPerformanceFeeBps;
         Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
 
         for (uint i; i < dexPositions.length; ++i) {
             IERC20 token0 = dexPositions[i].token0;
             IERC20 token1 = dexPositions[i].token1;
+            Liquidity.PairAmounts memory fees = feeAmounts[i];
 
-            (
-                Liquidity.RewardSplit memory split0,
-                Liquidity.RewardSplit memory split1
-            ) = _getRewardSplits(position.strategistPerformanceFeeBps, dexPositions[i]);
+            Liquidity.RewardSplit memory split0 = _calculateRewardSplit(fees.amount0, performanceFee);
+            Liquidity.RewardSplit memory split1 = _calculateRewardSplit(fees.amount1, performanceFee);
 
             rewardSplitMap.user.add(token0, split0.userAmount);
             rewardSplitMap.user.add(token1, split1.userAmount);
