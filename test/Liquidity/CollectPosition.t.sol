@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {Balances, BalanceMap} from "../utils/Balances.sol";
-import {UniswapV3Helper} from "../utils/exchange/UniswapV3Helper.sol";
 import {LiquidityTestHelpers, CreateInvestmentParams, RewardSplitMap} from "./LiquidityTestHelpers.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
