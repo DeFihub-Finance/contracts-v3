@@ -17,15 +17,15 @@ library Slippage {
         uint amount,
         TestERC20 token
     ) internal view returns (uint) {
-        if (amount < token.usdToAmount(100_000 ether))
-            // 1% slippage for amounts < $100k
+        if (amount < token.usdToAmount(10_000 ether))
+            // 1% slippage for amounts < $10k
             return Slippage.deductSlippage(amount, Constants.ONE_PERCENT_BPS);
 
-        if (amount < token.usdToAmount(500_000 ether))
-            // 3% slippage for amounts >= $100k and < $500k
+        if (amount < token.usdToAmount(100_000 ether))
+            // 3% slippage for amounts >= $10k and < $100k
             return Slippage.deductSlippage(amount, Constants.THREE_PERCENT_BPS);
 
-        // 5% slippage for amounts >= $500k
+        // 5% slippage for amounts >= $100k
         return Slippage.deductSlippage(amount, Constants.FIVE_PERCENT_BPS);
     }
 }
