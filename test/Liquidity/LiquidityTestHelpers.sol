@@ -451,6 +451,53 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             }
     }
 
+    /// @dev Helper to assert that liquidity fee events are emitted on collect/close.
+    /// @param tokenId Liquidity position token id
+    /// @param position Liquidity position struct
+    /// @param feeAmounts PairAmounts struct containing dex positions fee amounts
+    function _expectEmitFeeDistributedEvents(
+        uint tokenId,
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
+    ) internal {
+        uint16 performanceFee = position.strategistPerformanceFeeBps;
+        Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
+
+        for (uint i; i < feeAmounts.length; ++i) {
+            Liquidity.PairAmounts memory fees = feeAmounts[i];
+            Liquidity.DexPosition memory dexPosition = dexPositions[i];
+
+            Liquidity.RewardSplit memory split0 = _calculateRewardSplit(fees.amount0, performanceFee);
+            Liquidity.RewardSplit memory split1 = _calculateRewardSplit(fees.amount1, performanceFee);
+
+            vm.expectEmit(false, false, false, true, address(liquidity));
+            emit Liquidity.FeeDistributed(
+                account0,
+                position.strategy.strategist,
+                tokenId,
+                i,
+                dexPosition.token0,
+                dexPosition.token1,
+                split0.strategistAmount,
+                split1.strategistAmount,
+                UsePosition.FeeReceiver.STRATEGIST
+            );
+
+            vm.expectEmit(false, false, false, true, address(liquidity));
+            emit Liquidity.FeeDistributed(
+                account0,
+                treasury,
+                tokenId,
+                i,
+                dexPosition.token0,
+                dexPosition.token1,
+                split0.treasuryAmount,
+                split1.treasuryAmount,
+                UsePosition.FeeReceiver.TREASURY
+            );
+        }
+    }
+
     /// @dev Helper to get a pool from a number
     /// The number is then mapped to a position in the `availablePools` array.
     /// @param _number Number to get the pool from
