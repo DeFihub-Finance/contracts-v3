@@ -49,7 +49,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         uint inputAmount;
     }
 
-    struct CreatePositionParams {
+    struct InvestParams {
         IERC20 inputToken;
         uint inputAmount;
         Investment[] investments;
@@ -163,7 +163,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
-        CreatePositionParams memory params = abi.decode(_encodedInvestments, (CreatePositionParams));
+        InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
         uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
         uint totalAllocatedAmount;
 
