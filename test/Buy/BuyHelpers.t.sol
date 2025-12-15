@@ -107,16 +107,12 @@ abstract contract BuyHelpers is Test, BaseProductTestHelpers {
         uint _inputAmount,
         TestERC20 _inputToken,
         Buy.Investment[] memory _investments
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             Buy.InvestParams({
                 inputToken: _inputToken,
                 inputAmount: _inputAmount,
-                investments: _investments,
-                strategy: UsePosition.StrategyIdentifier({
-                    strategist: owner,
-                    externalRef: 1
-                })
+                investments: _investments
             })
         );
     }
