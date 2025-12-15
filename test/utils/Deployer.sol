@@ -17,6 +17,7 @@ import {TokenPrices} from "./tokens/TokenPrices.sol";
 import {Buy} from "../../contracts/products/Buy.sol";
 import {Strategy} from "../../contracts/products/Strategy.sol";
 import {Liquidity} from "../../contracts/products/Liquidity.sol";
+import {DollarCostAverage} from "../../contracts/products/DollarCostAverage.sol";
 import {IUniversalRouter} from "../../external/interfaces/IUniversalRouter.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 import {IWETH} from "../../external/interfaces/IWETH.sol";
@@ -24,6 +25,7 @@ import {IWETH} from "../../external/interfaces/IWETH.sol";
 abstract contract Deployer is Test {
     // Accounts
     address public immutable owner = makeAddr("OWNER");
+    address public immutable swapper = makeAddr("SWAPPER");
     address public immutable treasury = makeAddr("TREASURY");
     address public immutable account0 = makeAddr("ACCOUNT0");
     address public immutable account1 = makeAddr("ACCOUNT1");
@@ -39,6 +41,7 @@ abstract contract Deployer is Test {
     Buy public buy;
     Strategy public strategy;
     Liquidity public liquidity;
+    DollarCostAverage public dca;
 
     // External contracts
     IQuoter public quoterUniV3;
@@ -84,6 +87,10 @@ abstract contract Deployer is Test {
 
     /// @notice Deploys DeFihub modules
     function _deployHubModules() internal {
+        buy = new Buy();
+        liquidity = new Liquidity(owner, treasury, strategistFeeBps);
+        dca = new DollarCostAverage(owner, treasury, swapper, protocolFeeBps);
+
         strategy = new Strategy(
             owner,
             treasury,
@@ -93,14 +100,6 @@ abstract contract Deployer is Test {
             referrerFeeBps,
             24 hours // Referral duration
         );
-
-        liquidity = new Liquidity(
-            owner,
-            treasury,
-            strategistFeeBps
-        );
-
-        buy = new Buy();
     }
 
     /// @notice Deploys Uniswap V3 contracts
