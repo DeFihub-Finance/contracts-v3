@@ -121,7 +121,6 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
     function _getPoolInfo(
         DCA.PoolIdentifier memory poolId
     ) internal view returns (uint32 performedSwaps, uint nextSwapAmount, uint lastSwapTimestamp) {
-        // TODO remove underline prefix from public mapping?
         return dca.pools(poolId.inputToken, poolId.outputToken);
     }
 
