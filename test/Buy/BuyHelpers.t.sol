@@ -143,8 +143,4 @@ abstract contract BuyHelpers is Test, BaseProductTestHelpers {
         for (uint i; i < positions.length; ++i)
             buyAmountsByToken.add(positions[i].token, positions[i].amount);
     }
-
-    function _getTokenFromNumber(uint _number) internal view returns (TestERC20) {
-        return availableTokens[_number % availableTokens.length];
-    }
 }
