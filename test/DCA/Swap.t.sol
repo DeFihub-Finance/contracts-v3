@@ -101,7 +101,6 @@ contract Swap is Test, DCATestHelpers {
         dca.swap(swapParams);
     }
 
-    // Can stay here
     function _getEndingPositionDeductions(
         DCA.Position[] memory positions
     ) internal view returns (uint[] memory endingPositionDeductions) {
