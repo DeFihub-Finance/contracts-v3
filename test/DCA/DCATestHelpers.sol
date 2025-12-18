@@ -12,6 +12,13 @@ struct CreateInvestmentParams {
     uint allocatedAmount;
 }
 
+struct PoolInfo {
+    uint32 performedSwaps;
+    uint nextSwapAmount;
+    uint lastSwapTimestamp;
+    DCA.PoolIdentifier id;
+}
+
 abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
     /// @dev Helper to create a DCA position
     /// @param inputAmount Input amount of the DCA position
@@ -115,20 +122,29 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
 
     /// @dev Helper to get pool info
     /// @param poolId Pool identifier of the DCA position
-    /// @return performedSwaps Number of performed swaps in the pool
-    /// @return nextSwapAmount Pool next swap amount
-    /// @return lastSwapTimestamp Pool last swap timestamp
-    function _getPoolInfo(
+    /// @return PoolInfo struct
+    function _getDCAPoolInfo(
         DCA.PoolIdentifier memory poolId
-    ) internal view returns (uint32 performedSwaps, uint nextSwapAmount, uint lastSwapTimestamp) {
-        return dca.pools(poolId.inputToken, poolId.outputToken);
+    ) internal view returns (PoolInfo memory) {
+        (
+            uint32 _performedSwaps,
+            uint _nextSwapAmount,
+            uint _lastSwapTimestamp
+        ) = dca.pools(poolId.inputToken, poolId.outputToken);
+
+        return PoolInfo({
+            id: poolId,
+            performedSwaps: _performedSwaps,
+            nextSwapAmount: _nextSwapAmount,
+            lastSwapTimestamp: _lastSwapTimestamp
+        });
     }
 
     /// @dev Helper to get a Pool Identifier from a number
     /// The number is then mapped to the input and output tokens of the pool.
     /// @param _number Number to get the pool from
     /// @return Pool identifier
-    function _getPoolFromNumber(uint _number) internal view returns (DCA.PoolIdentifier memory) {
+    function _getDCAPoolFromNumber(uint _number) internal view returns (DCA.PoolIdentifier memory) {
         return DCA.PoolIdentifier({
             inputToken: _getTokenFromNumber(_number),
             outputToken: _getTokenFromNumber(_number + 1)
