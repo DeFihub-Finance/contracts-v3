@@ -62,14 +62,15 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
     /// @param params Array of CreateInvestmentParams struct
     /// @return tokenId The ID of the created DCA position
     function _createPositionAndSwap(
+        TestERC20 inputToken,
         CreateInvestmentParams[] memory params
     ) internal returns (uint tokenId) {
         (
             uint totalAmount,
             DCA.Investment[] memory investments
-        ) = _createDCAInvestments(usdc, params);
+        ) = _createDCAInvestments(inputToken, params);
 
-        tokenId = _createDCAPosition(totalAmount, usdc, investments);
+        tokenId = _createDCAPosition(totalAmount, inputToken, investments);
 
         PoolInfo[] memory poolsInfo = _getAllDCAPoolsInfo();
         uint[] memory swapFees = _getDCASwapFees(poolsInfo);

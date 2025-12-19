@@ -70,7 +70,7 @@ contract Swap is Test, DCATestHelpers {
             allocatedAmount: usdc.usdToAmount(100 ether) // $100 in USDC
         });
 
-        uint tokenId = _createPositionAndSwap(params);
+        uint tokenId = _createPositionAndSwap(usdc, params);
         DCA.Position[] memory positions = dca.getPositions(tokenId);
         DCA.SwapParams[] memory swapParams = new DCA.SwapParams[](positions.length);
 
