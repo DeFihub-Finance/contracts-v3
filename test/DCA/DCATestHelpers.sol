@@ -12,7 +12,33 @@ struct CreateInvestmentParams {
     uint allocatedAmount;
 }
 
+struct PoolInfo {
+    uint32 performedSwaps;
+    uint nextSwapAmount;
+    uint lastSwapTimestamp;
+    DCA.PoolIdentifier id;
+}
+
 abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
+    /// @dev Fuzz helper to create a DCA position with bounded params
+    /// @param inputToken Input token of the DCA position
+    /// @param params Array of CreateInvestmentParams struct
+    /// @return tokenId The ID of the created DCA position
+    function _createFuzzyDCAPosition(
+        TestERC20 inputToken,
+        CreateInvestmentParams[] memory params
+    ) internal returns (uint tokenId) {
+        (
+            uint totalAmount,
+            DCA.Investment[] memory investments
+        ) = _createDCAInvestments(
+            inputToken,
+            _boundCreateInvestmentParams(inputToken, params)
+        );
+
+        return _createDCAPosition(totalAmount, inputToken, investments);
+    }
+
     /// @dev Helper to create a DCA position
     /// @param inputAmount Input amount of the DCA position
     /// @param inputToken Input token of the DCA position
@@ -32,6 +58,30 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
         vm.stopPrank();
     }
 
+    /// @dev Helper to create a DCA position and perform swaps over the pools.
+    /// @param params Array of CreateInvestmentParams struct
+    /// @return tokenId The ID of the created DCA position
+    function _createPositionAndSwap(
+        TestERC20 inputToken,
+        CreateInvestmentParams[] memory params
+    ) internal returns (uint tokenId) {
+        (
+            uint totalAmount,
+            DCA.Investment[] memory investments
+        ) = _createDCAInvestments(inputToken, params);
+
+        tokenId = _createDCAPosition(totalAmount, inputToken, investments);
+
+        PoolInfo[] memory poolsInfo = _getAllDCAPoolsInfo();
+        uint[] memory swapFees = _getDCASwapFees(poolsInfo);
+
+        vm.startPrank(swapper);
+
+        dca.swap(_getDCASwapParams(swapFees, poolsInfo));
+
+        vm.stopPrank();
+    }
+
     /// @dev Helper to create DCA investments
     /// @param inputToken Input token of the DCA position
     /// @param params Array of CreateInvestmentParams struct
@@ -46,7 +96,7 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
         for (uint i; i < params.length; ++i) {
             CreateInvestmentParams memory investmentParams = params[i];
             uint allocatedAmount = investmentParams.allocatedAmount;
-            DCA.PoolIdentifier memory poolId = _getPoolFromNumber(i);
+            DCA.PoolIdentifier memory poolId = _getDCAPoolFromNumber(i);
 
             investments[i] = DCA.Investment({
                 inputAmount: allocatedAmount,
@@ -113,22 +163,84 @@ abstract contract DCATestHelpers is Test, BaseProductTestHelpers {
         );
     }
 
+    /// @dev Helper to get all pools info
+    /// @return poolsInfo Array of PoolInfo struct
+    function _getAllDCAPoolsInfo() internal view returns (PoolInfo[] memory poolsInfo) {
+        poolsInfo = new PoolInfo[](availableTokens.length);
+
+        for (uint i; i < availableTokens.length; ++i)
+            poolsInfo[i] = _getDCAPoolInfo(_getDCAPoolFromNumber(i));
+    }
+
     /// @dev Helper to get pool info
     /// @param poolId Pool identifier of the DCA position
-    /// @return performedSwaps Number of performed swaps in the pool
-    /// @return nextSwapAmount Pool next swap amount
-    /// @return lastSwapTimestamp Pool last swap timestamp
-    function _getPoolInfo(
+    /// @return PoolInfo struct
+    function _getDCAPoolInfo(
         DCA.PoolIdentifier memory poolId
-    ) internal view returns (uint32 performedSwaps, uint nextSwapAmount, uint lastSwapTimestamp) {
-        return dca.pools(poolId.inputToken, poolId.outputToken);
+    ) internal view returns (PoolInfo memory) {
+        (
+            uint32 _performedSwaps,
+            uint _nextSwapAmount,
+            uint _lastSwapTimestamp
+        ) = dca.pools(poolId.inputToken, poolId.outputToken);
+
+        return PoolInfo({
+            id: poolId,
+            performedSwaps: _performedSwaps,
+            nextSwapAmount: _nextSwapAmount,
+            lastSwapTimestamp: _lastSwapTimestamp
+        });
+    }
+
+    /// @dev Helper to get DCA swap fees from a set of pools
+    /// @param poolsInfo Array of PoolInfo struct
+    /// @return swapFees Array of swap fees
+    function _getDCASwapFees(
+        PoolInfo[] memory poolsInfo
+    ) internal view returns (uint[] memory swapFees) {
+        swapFees = new uint[](poolsInfo.length);
+
+        for (uint i; i < poolsInfo.length; ++i)
+            swapFees[i] = poolsInfo[i].nextSwapAmount * dca.swapFeeBps() / 1e4;
+    }
+
+    /// @dev Helper to get DCA swap params
+    /// @param swapFees Array of swap fees
+    /// @param poolsInfo Array of PoolInfo struct
+    /// @return swapParams Array of SwapParams struct
+    function _getDCASwapParams(
+        uint[] memory swapFees,
+        PoolInfo[] memory poolsInfo
+    ) internal returns (DCA.SwapParams[] memory swapParams) {
+        uint poolsToSwap;
+
+        for (uint i; i < poolsInfo.length; ++i)
+            if (poolsInfo[i].nextSwapAmount > 0) ++poolsToSwap;
+
+        swapParams = new DCA.SwapParams[](poolsToSwap);
+
+        for (uint i; i < poolsInfo.length; ++i) {
+            PoolInfo memory poolInfo = poolsInfo[i];
+
+            if (poolInfo.nextSwapAmount > 0) {
+                swapParams[i] = DCA.SwapParams({
+                    poolId: poolInfo.id,
+                    swap: _getSwap(
+                        poolInfo.nextSwapAmount - swapFees[i],
+                        TestERC20(address(poolInfo.id.inputToken)),
+                        TestERC20(address(poolInfo.id.outputToken)),
+                        address(dca)
+                    )
+                });
+            }
+        }
     }
 
     /// @dev Helper to get a Pool Identifier from a number
     /// The number is then mapped to the input and output tokens of the pool.
     /// @param _number Number to get the pool from
     /// @return Pool identifier
-    function _getPoolFromNumber(uint _number) internal view returns (DCA.PoolIdentifier memory) {
+    function _getDCAPoolFromNumber(uint _number) internal view returns (DCA.PoolIdentifier memory) {
         return DCA.PoolIdentifier({
             inputToken: _getTokenFromNumber(_number),
             outputToken: _getTokenFromNumber(_number + 1)

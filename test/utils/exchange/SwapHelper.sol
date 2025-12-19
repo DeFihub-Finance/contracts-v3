@@ -94,11 +94,20 @@ library SwapHelper {
         uint16 slippageBps
     ) internal returns (uint) {
         return Slippage.deductSlippage(
-            quoter.quoteExactInput(
-                abi.encodePacked(inputToken, Constants.FEE_MEDIUM, outputToken),
-                amount
-            ),
+            SwapHelper.quoteInput(amount, inputToken, outputToken, quoter),
             slippageBps
+        );
+    }
+
+    function quoteInput(
+        uint amount,
+        IERC20 inputToken,
+        IERC20 outputToken,
+        IQuoter quoter
+    ) internal returns (uint) {
+        return quoter.quoteExactInput(
+            abi.encodePacked(inputToken, Constants.FEE_MEDIUM, outputToken),
+            amount
         );
     }
 }

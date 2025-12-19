@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {TestERC20} from "../utils/tokens/TestERC20.sol";
 import {BalanceMap, BalanceMapper} from "../utils/Balances.sol";
-import {DCATestHelpers, CreateInvestmentParams} from "./DCATestHelpers.sol";
+import {DCATestHelpers, CreateInvestmentParams, PoolInfo} from "./DCATestHelpers.sol";
 import {UsePosition} from "../../contracts/abstract/UsePosition.sol";
 import {DollarCostAverage as DCA} from "../../contracts/products/DollarCostAverage.sol";
 
@@ -51,20 +51,20 @@ contract CreatePosition is Test, DCATestHelpers {
                 0.05 ether // 5% price impact tolerance
             );
 
-            (uint32 performedSwaps,,uint lastSwapTimestamp) = _getPoolInfo(position.poolId);
+            PoolInfo memory poolInfo = _getDCAPoolInfo(position.poolId);
 
-            assertEq(lastSwapTimestamp, 0);
-            assertEq(position.lastUpdateSwap, performedSwaps);
-            assertEq(position.finalSwap, performedSwaps + investment.swaps);
+            assertEq(poolInfo.lastSwapTimestamp, 0);
+            assertEq(position.lastUpdateSwap, poolInfo.performedSwaps);
+            assertEq(position.finalSwap, poolInfo.performedSwaps + investment.swaps);
 
             swapAmountsByToken.add(investment.poolId.inputToken, position.amountPerSwap);
         }
 
         for (uint i; i < availableTokens.length; ++i) {
-            (,uint nextSwapAmount,) = _getPoolInfo(_getPoolFromNumber(i));
+            PoolInfo memory poolInfo = _getDCAPoolInfo(_getDCAPoolFromNumber(i));
 
             // Assert the sum of amount per swap equals pool next swap amount
-            assertEq(nextSwapAmount, swapAmountsByToken.get(availableTokens[i]));
+            assertEq(poolInfo.nextSwapAmount, swapAmountsByToken.get(availableTokens[i]));
         }
     }
 
