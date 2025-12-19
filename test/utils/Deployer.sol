@@ -97,7 +97,7 @@ abstract contract Deployer is Test {
         liquidity = new Liquidity(
             owner,
             treasury,
-            strategistFeeBps
+            protocolFeeBps
         );
 
         buy = new Buy();
