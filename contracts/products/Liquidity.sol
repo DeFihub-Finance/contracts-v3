@@ -151,8 +151,8 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 investment.swapAmount1
             );
 
-            investment.token0.safeIncreaseAllowance(address(investment.positionManager), inputAmount0);
-            investment.token1.safeIncreaseAllowance(address(investment.positionManager), inputAmount1);
+            investment.token0.forceApprove(address(investment.positionManager), inputAmount0);
+            investment.token1.forceApprove(address(investment.positionManager), inputAmount1);
 
             (uint lpTokenId, uint128 liquidity,,) = investment.positionManager.mint(
                 INonfungiblePositionManager.MintParams({
@@ -169,6 +169,9 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                     deadline: block.timestamp
                 })
             );
+
+            investment.token0.forceApprove(address(investment.positionManager), 0);
+            investment.token1.forceApprove(address(investment.positionManager), 0);
 
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
