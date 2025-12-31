@@ -77,7 +77,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
 
     uint16 public protocolPerformanceFeeBps;
 
-    event FeeDistributed(
+    event RewardDistributed(
         address from,
         address to,
         uint tokenId,
@@ -136,6 +136,9 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
 
+            uint initialBalance0 = investment.token0.balanceOf(address(this));
+            uint initialBalance1 = investment.token1.balanceOf(address(this));
+
             totalAllocatedAmount += investment.swapAmount0 + investment.swapAmount1;
 
             uint inputAmount0 = HubRouter.execute(
@@ -172,6 +175,31 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
 
             investment.token0.forceApprove(address(investment.positionManager), 0);
             investment.token1.forceApprove(address(investment.positionManager), 0);
+
+            // Calculate dust (unused tokens after minting)
+            uint dust0 = investment.token0.balanceOf(address(this)) - initialBalance0;
+            uint dust1 = investment.token1.balanceOf(address(this)) - initialBalance1;
+
+            // Credit dust to investor as rewards
+            if (dust0 > 0)
+                rewards[msg.sender][investment.token0] += dust0;
+
+            if (dust1 > 0)
+                rewards[msg.sender][investment.token1] += dust1;
+
+            if (dust0 > 0 || dust1 > 0) {
+                emit RewardDistributed(
+                    msg.sender,
+                    msg.sender,
+                    _tokenId,
+                    i,
+                    investment.token0,
+                    investment.token1,
+                    dust0,
+                    dust1,
+                    RewardReceiver.INVESTOR
+                );
+            }
 
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
@@ -300,7 +328,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             rewards[_strategy.strategist][_pair.token0] += split0.strategistAmount;
             rewards[_strategy.strategist][_pair.token1] += split1.strategistAmount;
 
-            emit FeeDistributed(
+            emit RewardDistributed(
                 msg.sender,
                 _strategy.strategist,
                 _tokenId,
@@ -317,7 +345,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         rewards[_getTreasury()][_pair.token0] += split0.treasuryAmount;
         rewards[_getTreasury()][_pair.token1] += split1.treasuryAmount;
 
-        emit FeeDistributed(
+        emit RewardDistributed(
             msg.sender,
             _getTreasury(),
             _tokenId,
