@@ -85,7 +85,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         IERC20 token1,
         uint amount0,
         uint amount1,
-        FeeReceiver receiver
+        RewardReceiver receiver
     );
     event PositionCollected(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
@@ -305,7 +305,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 _pair.token1,
                 split0.strategistAmount,
                 split1.strategistAmount,
-                FeeReceiver.STRATEGIST
+                RewardReceiver.STRATEGIST
             );
         }
 
@@ -322,7 +322,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             _pair.token1,
             split0.treasuryAmount,
             split1.treasuryAmount,
-            FeeReceiver.TREASURY
+            RewardReceiver.TREASURY
         );
 
         return PairAmounts({
