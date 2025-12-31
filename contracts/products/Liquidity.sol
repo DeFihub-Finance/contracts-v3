@@ -5,6 +5,7 @@ pragma solidity 0.8.30;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 
 import {UsePosition} from "../abstract/UsePosition.sol";
@@ -12,7 +13,7 @@ import {UseReward} from "../abstract/UseReward.sol";
 import {UseTreasury} from "../abstract/UseTreasury.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseReward, UseTreasury {
+contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseReward, UseTreasury, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Investment {
@@ -118,7 +119,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         emit ProtocolPerformanceFeeUpdated(_protocolPerformanceFeeBps);
     }
 
-    function _createPosition(uint _tokenId, bytes memory _encodedInvestments) internal override {
+    function _createPosition(uint _tokenId, bytes memory _encodedInvestments) internal override nonReentrant {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
         if (params.strategistPerformanceFeeBps > MAX_STRATEGIST_FEE_BPS)
