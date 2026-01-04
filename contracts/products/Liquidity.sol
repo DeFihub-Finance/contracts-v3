@@ -32,6 +32,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
     }
 
     struct InvestParams {
+        address dustBeneficiary;
         IERC20 inputToken;
         uint inputAmount;
         Investment[] investments;
@@ -178,9 +179,8 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             investment.token0.forceApprove(address(investment.positionManager), 0);
             investment.token1.forceApprove(address(investment.positionManager), 0);
 
-            _handleDust(msg.sender, params.inputToken, investment.token0, initialBalance0);
-
-            _handleDust(msg.sender, params.inputToken, investment.token1, initialBalance1);
+            _handleDust(params.dustBeneficiary, params.inputToken, investment.token0, initialBalance0);
+            _handleDust(params.dustBeneficiary, params.inputToken, investment.token1, initialBalance1);
 
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
