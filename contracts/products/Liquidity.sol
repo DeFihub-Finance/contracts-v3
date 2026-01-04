@@ -88,12 +88,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         uint amount1,
         RewardReceiver receiver
     );
-    event Dust(
-        address owner,
-        uint tokenId,
-        IERC20 token,
-        uint amount
-    );
+    event Dust(address owner, IERC20 token, uint amount);
     event PositionCollected(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
     event ProtocolPerformanceFeeUpdated(uint16 protocolPerformanceFeeBps);
@@ -183,28 +178,9 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             investment.token0.forceApprove(address(investment.positionManager), 0);
             investment.token1.forceApprove(address(investment.positionManager), 0);
 
-            uint finalBalance0 = params.inputToken != investment.token0
-                ? investment.token0.balanceOf(address(this))
-                : 0;
-            uint finalBalance1 = params.inputToken != investment.token1
-                ? investment.token1.balanceOf(address(this))
-                : 0;
+            _handleDust(msg.sender, params.inputToken, investment.token0, initialBalance0);
 
-            if (finalBalance0 > initialBalance0) {
-                uint dust0 = finalBalance0 - initialBalance0;
-
-                rewards[msg.sender][investment.token0] += dust0;
-
-                emit Dust(msg.sender, _tokenId, investment.token0, dust0);
-            }
-
-            if (finalBalance1 > initialBalance1) {
-                uint dust1 = finalBalance1 - initialBalance1;
-
-                rewards[msg.sender][investment.token1] += dust1;
-
-                emit Dust(msg.sender, _tokenId, investment.token1, dust1);
-            }
+            _handleDust(msg.sender, params.inputToken, investment.token1, initialBalance1);
 
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
@@ -394,5 +370,20 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         (,, address token0, address token1,,,,,,,,) = _positionManager.positions(_lpTokenId);
 
         return Pair(IERC20(token0), IERC20(token1));
+    }
+
+    function _handleDust(address _user, IERC20 _inputToken, IERC20 _dustToken, uint _initialBalance) internal {
+        if (_inputToken == _dustToken)
+            return;
+
+        uint currentBalance = _dustToken.balanceOf(address(this));
+
+        if (currentBalance > _initialBalance) {
+            uint dust = currentBalance - _initialBalance;
+
+            rewards[_user][_dustToken] += dust;
+
+            emit Dust(_user, _dustToken, dust);
+        }
     }
 }
