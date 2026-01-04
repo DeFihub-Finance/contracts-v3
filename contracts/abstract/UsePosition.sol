@@ -17,8 +17,7 @@ abstract contract UsePosition is ERC721 {
     enum RewardReceiver {
         STRATEGIST,
         REFERRER,
-        TREASURY,
-        INVESTOR
+        TREASURY
     }
 
     uint constant internal MAX_ROUNDING_TOLERANCE_BPS = 2; // 0.02%
