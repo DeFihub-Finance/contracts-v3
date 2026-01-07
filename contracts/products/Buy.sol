@@ -22,7 +22,6 @@ contract Buy is UsePosition("DeFihub Buy Position", "DHBP") {
         IERC20 inputToken;
         uint inputAmount;
         Investment[] investments;
-        StrategyIdentifier strategy;
     }
 
     struct Position {
