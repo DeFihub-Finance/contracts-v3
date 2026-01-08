@@ -31,6 +31,8 @@ struct RewardSplitMap {
 }
 
 abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
+    uint8 internal constant MAX_LIQUIDITY_INVESTMENTS = 10;
+
     /// @dev Fuzz helper to create a liquidity position with bounded params
     /// @param inputToken Input token of the liquidity position
     /// @param params Array of CreateInvestmentParams struct
@@ -172,7 +174,7 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
     ) internal view returns (CreateInvestmentParams[] memory) {
         uint totalInvestments = investmentParams.length;
 
-        vm.assume(totalInvestments > 0 && totalInvestments <= MAX_INVESTMENTS);
+        vm.assume(totalInvestments > 0 && totalInvestments <= MAX_LIQUIDITY_INVESTMENTS);
 
         for (uint i; i < totalInvestments; ++i) {
             CreateInvestmentParams memory params = investmentParams[i];
@@ -260,8 +262,8 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
 
         uint maxLiquidityUsd = token0.amountToUsd(amount0Max) + token1.amountToUsd(amount1Max);
 
-        // Cap upper bound of allocation amount at $1M
-        maxLiquidityUsd = maxLiquidityUsd > 1e6 ether ? 1e6 ether : maxLiquidityUsd;
+        // Cap upper bound of allocation amount at $500K
+        maxLiquidityUsd = maxLiquidityUsd > 5e5 ether ? 5e5 ether : maxLiquidityUsd;
 
         return bound(
             params.allocatedAmount,
