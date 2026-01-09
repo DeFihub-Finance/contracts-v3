@@ -36,6 +36,7 @@ const config: HardhatUserConfig = {
       allowInternalExpectRevert: true,
       fuzz: {
         runs: Number(process.env.FUZZ_RUNS) || 1024,
+        maxTestRejects: 200_000,
       },
       fsPermissions: {
         readDirectory: ["node_modules/@uniswap"]
