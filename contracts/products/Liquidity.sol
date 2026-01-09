@@ -128,42 +128,45 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             revert FeeTooHigh();
 
         Position storage position = _tokenToPositions[_tokenId];
+        IERC20 inputToken = params.inputToken;
 
         position.strategy = params.strategy;
         position.strategistPerformanceFeeBps = params.strategistPerformanceFeeBps;
 
-        uint initialBalanceInputToken = params.inputToken.balanceOf(address(this));
-        uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
+        uint initialBalanceInputToken = inputToken.balanceOf(address(this));
+        uint totalAmount = _pullToken(inputToken, params.inputAmount);
         uint totalAllocatedAmount;
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
+            IERC20 token0 = investment.token0;
+            IERC20 token1 = investment.token1;
 
-            uint initialBalance0 = investment.token0.balanceOf(address(this));
-            uint initialBalance1 = investment.token1.balanceOf(address(this));
+            uint initialBalance0 = token0.balanceOf(address(this));
+            uint initialBalance1 = token1.balanceOf(address(this));
 
             totalAllocatedAmount += investment.swapAmount0 + investment.swapAmount1;
 
             uint inputAmount0 = HubRouter.execute(
                 investment.swap0,
-                params.inputToken,
-                investment.token0,
+                inputToken,
+                token0,
                 investment.swapAmount0
             );
             uint inputAmount1 = HubRouter.execute(
                 investment.swap1,
-                params.inputToken,
-                investment.token1,
+                inputToken,
+                token1,
                 investment.swapAmount1
             );
 
-            investment.token0.forceApprove(address(investment.positionManager), inputAmount0);
-            investment.token1.forceApprove(address(investment.positionManager), inputAmount1);
+            token0.forceApprove(address(investment.positionManager), inputAmount0);
+            token1.forceApprove(address(investment.positionManager), inputAmount1);
 
             (uint lpTokenId, uint128 liquidity,,) = investment.positionManager.mint(
                 INonfungiblePositionManager.MintParams({
-                    token0: address(investment.token0),
-                    token1: address(investment.token1),
+                    token0: address(token0),
+                    token1: address(token1),
                     fee: investment.fee,
                     tickLower: investment.tickLower,
                     tickUpper: investment.tickUpper,
@@ -176,25 +179,25 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 })
             );
 
-            investment.token0.forceApprove(address(investment.positionManager), 0);
-            investment.token1.forceApprove(address(investment.positionManager), 0);
+            token0.forceApprove(address(investment.positionManager), 0);
+            token1.forceApprove(address(investment.positionManager), 0);
 
-            _handleDust(params.dustBeneficiary, params.inputToken, investment.token0, initialBalance0);
-            _handleDust(params.dustBeneficiary, params.inputToken, investment.token1, initialBalance1);
+            _handleDust(params.dustBeneficiary, inputToken, token0, initialBalance0);
+            _handleDust(params.dustBeneficiary, inputToken, token1, initialBalance1);
 
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
                 lpTokenId: lpTokenId,
                 liquidity: liquidity,
-                token0: investment.token0,
-                token1: investment.token1
+                token0: token0,
+                token1: token1
             }));
         }
 
-        uint finalBalanceInputToken = params.inputToken.balanceOf(address(this));
+        uint finalBalanceInputToken = inputToken.balanceOf(address(this));
 
         if (finalBalanceInputToken > initialBalanceInputToken)
-            params.inputToken.safeTransfer(params.dustBeneficiary, finalBalanceInputToken - initialBalanceInputToken);
+            inputToken.safeTransfer(params.dustBeneficiary, finalBalanceInputToken - initialBalanceInputToken);
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
