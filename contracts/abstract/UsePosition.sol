@@ -14,7 +14,7 @@ abstract contract UsePosition is ERC721 {
         uint externalRef;
     }
 
-    enum FeeReceiver {
+    enum RewardReceiver {
         STRATEGIST,
         REFERRER,
         TREASURY
@@ -43,9 +43,7 @@ abstract contract UsePosition is ERC721 {
     }
 
     function _createToken() internal returns (uint tokenId) {
-        tokenId = _nextTokenId;
-
-        _nextTokenId++;
+        tokenId = _nextTokenId++;
 
         _safeMint(msg.sender, tokenId);
     }

@@ -62,7 +62,7 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
     uint16 public referrerFeeBps;
 
     event FeesUpdated(uint16 protocolFeeBps, uint16 strategistFeeBps, uint16 referrerFeeBps);
-    event FeeDistributed(address from, address to, uint strategyRef, IERC20 token, uint amount, FeeReceiver receiver);
+    event FeeDistributed(address from, address to, uint strategyRef, IERC20 token, uint amount, RewardReceiver receiver);
 
     error InvalidInput();
     error InsufficientOutputAmount();
@@ -274,20 +274,20 @@ contract Strategy is UsePosition("DeFihub Strategy Position", "DHSP"), UseReward
             uint strategistFee = (_inputAmount * strategistFeeBps) / 1e4;
             rewards[_strategy.strategist][_token] += strategistFee;
             remainingAmount -= strategistFee;
-            emit FeeDistributed(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, FeeReceiver.STRATEGIST);
+            emit FeeDistributed(msg.sender, _strategy.strategist, _strategy.externalRef, _token, strategistFee, RewardReceiver.STRATEGIST);
         }
 
         if (hasReferrer) {
             uint referrerFee = (_inputAmount * referrerFeeBps) / 1e4;
             rewards[referrer][_token] += referrerFee;
             remainingAmount -= referrerFee;
-            emit FeeDistributed(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, FeeReceiver.REFERRER);
+            emit FeeDistributed(msg.sender, referrer, _strategy.externalRef, _token, referrerFee, RewardReceiver.REFERRER);
         }
 
         // TODO gasopt: test if saving treasury to variable saves gas
         uint protocolFee = (hasReferrer ? protocolFeeBps : protocolFeeBps + referrerFeeBps) * _inputAmount / 1e4;
         rewards[_getTreasury()][_token] += protocolFee;
         remainingAmount -= protocolFee;
-        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, FeeReceiver.TREASURY);
+        emit FeeDistributed(msg.sender, _getTreasury(), _strategy.externalRef, _token, protocolFee, RewardReceiver.TREASURY);
     }
 }

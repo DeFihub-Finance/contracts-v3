@@ -5,6 +5,7 @@ pragma solidity 0.8.30;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {INonfungiblePositionManager} from "../../external/interfaces/INonfungiblePositionManager.sol";
 
 import {UsePosition} from "../abstract/UsePosition.sol";
@@ -12,7 +13,7 @@ import {UseReward} from "../abstract/UseReward.sol";
 import {UseTreasury} from "../abstract/UseTreasury.sol";
 import {HubRouter} from "../libraries/HubRouter.sol";
 
-contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseReward, UseTreasury {
+contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseReward, UseTreasury, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Investment {
@@ -31,6 +32,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
     }
 
     struct InvestParams {
+        address dustBeneficiary;
         IERC20 inputToken;
         uint inputAmount;
         Investment[] investments;
@@ -76,7 +78,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
 
     uint16 public protocolPerformanceFeeBps;
 
-    event FeeDistributed(
+    event RewardDistributed(
         address from,
         address to,
         uint tokenId,
@@ -85,8 +87,9 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         IERC20 token1,
         uint amount0,
         uint amount1,
-        FeeReceiver receiver
+        RewardReceiver receiver
     );
+    event Dust(address owner, IERC20 token, uint amount);
     event PositionCollected(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
     event PositionClosed(address owner, address beneficiary, uint tokenId, PairAmounts[] withdrawnAmounts);
     event ProtocolPerformanceFeeUpdated(uint16 protocolPerformanceFeeBps);
@@ -118,7 +121,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         emit ProtocolPerformanceFeeUpdated(_protocolPerformanceFeeBps);
     }
 
-    function _createPosition(uint _tokenId, bytes memory _encodedInvestments) internal override {
+    function _createPosition(uint _tokenId, bytes memory _encodedInvestments) internal override nonReentrant {
         InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
 
         if (params.strategistPerformanceFeeBps > MAX_STRATEGIST_FEE_BPS)
@@ -129,11 +132,15 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         position.strategy = params.strategy;
         position.strategistPerformanceFeeBps = params.strategistPerformanceFeeBps;
 
+        uint initialBalanceInputToken = params.inputToken.balanceOf(address(this));
         uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
         uint totalAllocatedAmount;
 
         for (uint i; i < params.investments.length; ++i) {
             Investment memory investment = params.investments[i];
+
+            uint initialBalance0 = investment.token0.balanceOf(address(this));
+            uint initialBalance1 = investment.token1.balanceOf(address(this));
 
             totalAllocatedAmount += investment.swapAmount0 + investment.swapAmount1;
 
@@ -150,8 +157,8 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 investment.swapAmount1
             );
 
-            investment.token0.safeIncreaseAllowance(address(investment.positionManager), inputAmount0);
-            investment.token1.safeIncreaseAllowance(address(investment.positionManager), inputAmount1);
+            investment.token0.forceApprove(address(investment.positionManager), inputAmount0);
+            investment.token1.forceApprove(address(investment.positionManager), inputAmount1);
 
             (uint lpTokenId, uint128 liquidity,,) = investment.positionManager.mint(
                 INonfungiblePositionManager.MintParams({
@@ -169,6 +176,12 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 })
             );
 
+            investment.token0.forceApprove(address(investment.positionManager), 0);
+            investment.token1.forceApprove(address(investment.positionManager), 0);
+
+            _handleDust(params.dustBeneficiary, params.inputToken, investment.token0, initialBalance0);
+            _handleDust(params.dustBeneficiary, params.inputToken, investment.token1, initialBalance1);
+
             position.dexPositions.push(DexPosition({
                 positionManager: investment.positionManager,
                 lpTokenId: lpTokenId,
@@ -177,6 +190,11 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 token1: investment.token1
             }));
         }
+
+        uint finalBalanceInputToken = params.inputToken.balanceOf(address(this));
+
+        if (finalBalanceInputToken > initialBalanceInputToken)
+            params.inputToken.safeTransfer(params.dustBeneficiary, finalBalanceInputToken - initialBalanceInputToken);
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
@@ -296,7 +314,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             rewards[_strategy.strategist][_pair.token0] += split0.strategistAmount;
             rewards[_strategy.strategist][_pair.token1] += split1.strategistAmount;
 
-            emit FeeDistributed(
+            emit RewardDistributed(
                 msg.sender,
                 _strategy.strategist,
                 _tokenId,
@@ -305,7 +323,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
                 _pair.token1,
                 split0.strategistAmount,
                 split1.strategistAmount,
-                FeeReceiver.STRATEGIST
+                RewardReceiver.STRATEGIST
             );
         }
 
@@ -313,7 +331,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         rewards[_getTreasury()][_pair.token0] += split0.treasuryAmount;
         rewards[_getTreasury()][_pair.token1] += split1.treasuryAmount;
 
-        emit FeeDistributed(
+        emit RewardDistributed(
             msg.sender,
             _getTreasury(),
             _tokenId,
@@ -322,7 +340,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
             _pair.token1,
             split0.treasuryAmount,
             split1.treasuryAmount,
-            FeeReceiver.TREASURY
+            RewardReceiver.TREASURY
         );
 
         return PairAmounts({
@@ -352,5 +370,20 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         (,, address token0, address token1,,,,,,,,) = _positionManager.positions(_lpTokenId);
 
         return Pair(IERC20(token0), IERC20(token1));
+    }
+
+    function _handleDust(address _user, IERC20 _inputToken, IERC20 _dustToken, uint _initialBalance) internal {
+        if (_inputToken == _dustToken)
+            return;
+
+        uint currentBalance = _dustToken.balanceOf(address(this));
+
+        if (currentBalance > _initialBalance) {
+            uint dust = currentBalance - _initialBalance;
+
+            rewards[_user][_dustToken] += dust;
+
+            emit Dust(_user, _dustToken, dust);
+        }
     }
 }

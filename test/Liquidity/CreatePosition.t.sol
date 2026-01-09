@@ -82,6 +82,7 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
         liquidity.createPosition(
             abi.encode(
                 Liquidity.InvestParams({
+                    dustBeneficiary: account0,
                     inputToken: usdc,
                     inputAmount: 0,
                     investments: new Liquidity.Investment[](0),
@@ -133,7 +134,7 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
         vm.startPrank(account0);
 
         vm.expectRevert(UsePosition.InvalidAllocatedAmount.selector);
-        liquidity.createPosition(_encodeLiquidityInvestParams(usdc, inputAmount, investments));
+        liquidity.createPosition(_encodeLiquidityInvestParams(account0, usdc, inputAmount, investments));
     }
 
     function test_createPosition_reverts_totalAllocationsLessThanTolerance() public {
@@ -146,7 +147,7 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
         vm.expectRevert(UsePosition.InvalidAllocatedAmount.selector);
 
         liquidity.createPosition(
-            _encodeLiquidityInvestParams(usdc, inputAmount, new Liquidity.Investment[](0))
+            _encodeLiquidityInvestParams(account0, usdc, inputAmount, new Liquidity.Investment[](0))
         );
     }
 }

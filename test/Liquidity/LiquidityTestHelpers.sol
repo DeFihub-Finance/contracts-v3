@@ -43,24 +43,27 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         vm.startPrank(account0);
 
         tokenId = liquidity.createPosition(
-            _encodeLiquidityInvestParams(inputToken, inputAmount, investments)
+            _encodeLiquidityInvestParams(account0, inputToken, inputAmount, investments)
         );
 
         vm.stopPrank();
     }
 
     /// @dev Helper to encode liquidity product invest params
+    /// @param _dustBeneficiary Address to receive dust tokens
     /// @param _inputAmount Input amount of the liquidity position
     /// @param _inputToken Input token of the liquidity position
     /// @param _investments Investments of the liquidity position
     /// @return Bytes of the encoded invest params
     function _encodeLiquidityInvestParams(
+        address _dustBeneficiary,
         TestERC20 _inputToken,
         uint _inputAmount,
         Liquidity.Investment[] memory _investments
     ) internal view returns (bytes memory) {
         return abi.encode(
             Liquidity.InvestParams({
+                dustBeneficiary: _dustBeneficiary,
                 inputToken: _inputToken,
                 inputAmount: _inputAmount,
                 investments: _investments,
