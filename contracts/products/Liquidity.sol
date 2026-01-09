@@ -194,7 +194,7 @@ contract Liquidity is UsePosition("DeFihub Liquidity Position", "DHLP"), UseRewa
         uint finalBalanceInputToken = params.inputToken.balanceOf(address(this));
 
         if (finalBalanceInputToken > initialBalanceInputToken)
-            params.inputToken.safeTransfer(msg.sender, finalBalanceInputToken - initialBalanceInputToken);
+            params.inputToken.safeTransfer(params.dustBeneficiary, finalBalanceInputToken - initialBalanceInputToken);
 
         _validateAllocatedAmount(totalAllocatedAmount, totalAmount);
     }
