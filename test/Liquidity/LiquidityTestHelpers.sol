@@ -172,11 +172,10 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         TestERC20 inputToken,
         CreateInvestmentParams[] memory investmentParams
     ) internal view returns (CreateInvestmentParams[] memory) {
-        uint totalInvestments = investmentParams.length;
+        vm.assume(investmentParams.length > 0);
+        _boundInvestmentParamsLength(investmentParams);
 
-        vm.assume(totalInvestments > 0 && totalInvestments <= MAX_LIQUIDITY_INVESTMENTS);
-
-        for (uint i; i < totalInvestments; ++i) {
+        for (uint i; i < investmentParams.length; ++i) {
             CreateInvestmentParams memory params = investmentParams[i];
 
             IUniswapV3Pool pool = _getPoolFromNumber(i);
@@ -415,6 +414,17 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             rewardSplitMap.strategist.add(token0, split0.strategistAmount);
             rewardSplitMap.strategist.add(token1, split1.strategistAmount);
         }
+    }
+
+    /// @dev Helper to bound investment params array length to max allowed
+    /// @param investmentParams Array of CreateInvestmentParams struct
+    function _boundInvestmentParamsLength(
+        CreateInvestmentParams[] memory investmentParams
+    ) internal pure {
+        if (investmentParams.length > MAX_LIQUIDITY_INVESTMENTS)
+            assembly {
+                mstore(investmentParams, MAX_LIQUIDITY_INVESTMENTS)
+            }
     }
 
     /// @dev Helper to get a pool from a number
