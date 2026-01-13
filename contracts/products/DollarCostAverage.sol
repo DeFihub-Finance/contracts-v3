@@ -147,6 +147,16 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         return _tokenToPositions[_tokenId];
     }
 
+    function getPositionOutputTokenBalances(uint _tokenId) external view returns (uint[] memory) {
+        Position[] memory positions = _tokenToPositions[_tokenId];
+        uint[] memory balances = new uint[](positions.length);
+
+        for (uint i; i < positions.length; ++i)
+            balances[i] = _calculateOutputTokenBalance(positions[i], _getPool(positions[i].poolId));
+
+        return balances;
+    }
+
     function collectFees(IERC20 _token, address _beneficiary) external onlyOwner {
         uint fee = _fees[_token];
 
