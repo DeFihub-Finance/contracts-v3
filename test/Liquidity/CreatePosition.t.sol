@@ -19,7 +19,7 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
         uint rand,
         CreateInvestmentParams[] memory params
     ) public {
-        TestERC20 inputToken = availableTokens[rand % availableTokens.length];
+        TestERC20 inputToken = _getTokenFromNumber(rand);
 
         (
             uint totalAmount,
