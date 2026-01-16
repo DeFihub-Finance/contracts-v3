@@ -19,9 +19,9 @@ library Slippage {
     ) internal view returns (uint) {
         uint amountUsd = token.amountToUsd(amount);
 
-        // Below ~$0.1, percentage-based slippage may round to 0, so we need higher tolerance
-        if (amountUsd < 0.1 ether)
-            return Slippage.deductSlippage(amount, Constants.TEN_PERCENT_BPS); // 5%
+        if (amountUsd < 1 ether)
+            // 10% slippage for amounts < $1
+            return Slippage.deductSlippage(amount, Constants.TEN_PERCENT_BPS);
 
         if (amountUsd < 10_000 ether)
             // 1% slippage for amounts < $10k

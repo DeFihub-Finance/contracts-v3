@@ -266,7 +266,7 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
 
         return bound(
             params.allocatedAmount,
-            inputToken.usdToAmount(0.01 ether), // $0.01 in input token amount
+            inputToken.usdToAmount(0.1 ether), // $0.1 in input token amount
             inputToken.usdToAmount(maxLiquidityUsd)
         );
     }
