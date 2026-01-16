@@ -300,7 +300,10 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
 
         vm.assume(liquidityMaxByAmounts != 0);
 
-        uint128 liquidityMaxByTickSpacing = Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
+        // Some positions can touch the same tick, so we need to make sure that
+        // all investments can be created even if all of them touch the same ticks.
+        uint128 liquidityMaxByTickSpacing = 
+            Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing) / 3;
 
         // Return either the liquidity by amounts or the liquidity by tick spacing
         return liquidityMaxByAmounts > liquidityMaxByTickSpacing
