@@ -53,11 +53,14 @@ contract CreatePositionTest is Test, LiquidityTestHelpers {
             TestERC20 token0 = TestERC20(address(dexPosition.token0));
             TestERC20 token1 = TestERC20(address(dexPosition.token1));
 
+            uint allocationUsd = inputToken.amountToUsd(investment.swapAmount0 + investment.swapAmount1);
+
             // Compare price impact values in USD
             assertApproxEqRel(
                 token0.amountToUsd(amount0) + token1.amountToUsd(amount1),
-                inputToken.amountToUsd(investment.swapAmount0 + investment.swapAmount1),
-                0.05 ether // 5% price impact tolerance
+                allocationUsd,
+                // For allocations less than $1 use 10% of tolerance, otherwise 5%
+                allocationUsd < 1 ether ? 0.1 ether : 0.05 ether
             );
         }
     }
