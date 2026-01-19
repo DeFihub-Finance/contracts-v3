@@ -282,23 +282,26 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         int24 tickSpacing,
         uint160 sqrtPriceX96
     ) internal pure returns (uint128) {
+        uint160 sqrtRatioLower = TickMath.getSqrtRatioAtTick(tickLower);
+        uint160 sqrtRatioUpper = TickMath.getSqrtRatioAtTick(tickUpper);
+
         // Get max amount0 and amount1 that can be deposited at this range.
         (uint maxAmount0, uint maxAmount1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96,
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
+            sqrtRatioLower,
+            sqrtRatioUpper,
             type(uint128).max
         );
 
         uint128 liquidityMaxByAmounts = LiquidityAmounts.getLiquidityForAmounts(
             sqrtPriceX96,
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
+            sqrtRatioLower,
+            sqrtRatioUpper,
             maxAmount0,
             maxAmount1
         );
 
-        vm.assume(liquidityMaxByAmounts != 0);
+        vm.assume(liquidityMaxByAmounts > 0);
 
         // Some positions can touch the same tick, so we need to make sure that
         // all investments can be created even if all of them touch the same ticks.
