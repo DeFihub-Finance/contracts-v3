@@ -264,11 +264,12 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         // Cap upper bound of allocation amount at $500K
         maxLiquidityUsd = maxLiquidityUsd > 5e5 ether ? 5e5 ether : maxLiquidityUsd;
 
-        return bound(
-            params.allocatedAmount,
-            inputToken.usdToAmount(0.1 ether), // $0.1 in input token amount
-            inputToken.usdToAmount(maxLiquidityUsd)
-        );
+        uint minAllocationUsd = inputToken.usdToAmount(0.1 ether); // $0.1 in input token amount
+        uint maxAllocationUsd = inputToken.usdToAmount(maxLiquidityUsd);
+
+        vm.assume(maxAllocationUsd > minAllocationUsd);
+
+        return bound(params.allocatedAmount, minAllocationUsd, maxAllocationUsd);
     }
 
     /// @dev Helper to compute the max liquidity delta from a specific range
