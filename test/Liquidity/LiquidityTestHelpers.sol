@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Tick} from "@uniswap/v3-core-0.8/contracts/libraries/Tick.sol";
 import {TickMath} from "@uniswap/v3-core-0.8/contracts/libraries/TickMath.sol";
@@ -175,6 +176,9 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         vm.assume(investmentParams.length > 0);
         _boundInvestmentParamsLength(investmentParams);
 
+        // Safe to cast since investments length is capped
+        uint8 maxPositionsPerPool = uint8(Math.ceilDiv(investmentParams.length, availablePools.length));
+
         for (uint i; i < investmentParams.length; ++i) {
             CreateInvestmentParams memory params = investmentParams[i];
 
@@ -194,8 +198,11 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
                 params.tickLower,
                 params.tickUpper,
                 tickSpacing,
-                sqrtPriceX96
+                sqrtPriceX96,
+                maxPositionsPerPool
             );
+
+            vm.assume(params.liquidityDeltaMax > 0);
 
             // Step 3 - bound allocationAmount
             params.allocatedAmount = _boundAllocationAmount(
@@ -277,11 +284,14 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
     /// @param tickUpper Upper tick
     /// @param tickSpacing Tick spacing of the pool
     /// @param sqrtPriceX96 Current sqrtPrice of the pool
+    /// @param maxPositions Max positions per pool, useful if multiple positions 
+    // are initialized in the same pool, with potential tick overlap
     function _getMaxLiquidityFromRange(
         int24 tickLower,
         int24 tickUpper,
         int24 tickSpacing,
-        uint160 sqrtPriceX96
+        uint160 sqrtPriceX96,
+        uint8 maxPositions
     ) internal pure returns (uint128) {
         uint160 sqrtRatioLower = TickMath.getSqrtRatioAtTick(tickLower);
         uint160 sqrtRatioUpper = TickMath.getSqrtRatioAtTick(tickUpper);
@@ -302,17 +312,24 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             maxAmount1
         );
 
-        vm.assume(liquidityMaxByAmounts > 0);
-
-        // Some positions can touch the same tick, so we need to make sure that
-        // all investments can be created even if all of them touch the same ticks.
+        // Positions initialized in the same pool can overlap ticks, so we need 
+        // to make sure that all of them can be created.
         uint128 liquidityMaxByTickSpacing = 
-            Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing) / 3;
+            Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing) / maxPositions;
 
         // Return either the liquidity by amounts or the liquidity by tick spacing
         return liquidityMaxByAmounts > liquidityMaxByTickSpacing
             ? liquidityMaxByTickSpacing
             : liquidityMaxByAmounts;
+    }
+
+    function _getMaxLiquidityFromRange(
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickSpacing,
+        uint160 sqrtPriceX96
+    ) internal pure returns (uint128) {
+        return _getMaxLiquidityFromRange(tickLower, tickUpper, tickSpacing, sqrtPriceX96, 1);
     }
 
     /// @dev Helper to fees from all dex positions
