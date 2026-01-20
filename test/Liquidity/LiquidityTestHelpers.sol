@@ -217,6 +217,17 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         return investmentParams;
     }
 
+    /// @dev Helper to bound investment params array length to max allowed
+    /// @param investmentParams Array of CreateInvestmentParams struct
+    function _boundInvestmentParamsLength(
+        CreateInvestmentParams[] memory investmentParams
+    ) internal pure {
+        if (investmentParams.length > MAX_LIQUIDITY_INVESTMENTS)
+            assembly {
+                mstore(investmentParams, MAX_LIQUIDITY_INVESTMENTS)
+            }
+    }
+
     /// @dev Helper to bound the ticks
     /// @param tickLower Lower tick
     /// @param tickUpper Upper tick
@@ -465,17 +476,6 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
             rewardSplitMap.strategist.add(token0, split0.strategistAmount);
             rewardSplitMap.strategist.add(token1, split1.strategistAmount);
         }
-    }
-
-    /// @dev Helper to bound investment params array length to max allowed
-    /// @param investmentParams Array of CreateInvestmentParams struct
-    function _boundInvestmentParamsLength(
-        CreateInvestmentParams[] memory investmentParams
-    ) internal pure {
-        if (investmentParams.length > MAX_LIQUIDITY_INVESTMENTS)
-            assembly {
-                mstore(investmentParams, MAX_LIQUIDITY_INVESTMENTS)
-            }
     }
 
     /// @dev Helper to map dex position amounts by token.
