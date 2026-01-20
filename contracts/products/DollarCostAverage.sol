@@ -49,7 +49,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         uint inputAmount;
     }
 
-    struct CreatePositionParams {
+    struct InvestParams {
         IERC20 inputToken;
         uint inputAmount;
         Investment[] investments;
@@ -62,7 +62,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
     uint128 public constant SWAP_QUOTE_PRECISION = 1e18;
 
     // @dev inputToken => outputToken => boolean
-    mapping(IERC20 => mapping(IERC20 => Pool)) public _pools;
+    mapping(IERC20 => mapping(IERC20 => Pool)) public pools;
 
     mapping(uint => Position[]) internal _tokenToPositions;
 
@@ -163,7 +163,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
         uint _tokenId,
         bytes memory _encodedInvestments
     ) internal override {
-        CreatePositionParams memory params = abi.decode(_encodedInvestments, (CreatePositionParams));
+        InvestParams memory params = abi.decode(_encodedInvestments, (InvestParams));
         uint totalAmount = _pullToken(params.inputToken, params.inputAmount);
         uint totalAllocatedAmount;
 
@@ -290,7 +290,7 @@ contract DollarCostAverage is UsePosition("DeFihub DCA Position", "DHDCAP"), Use
     }
 
     function _getPool(PoolIdentifier memory _id) internal view returns (Pool storage) {
-        return _pools[_id.inputToken][_id.outputToken];
+        return pools[_id.inputToken][_id.outputToken];
     }
 
     function setSwapper(address _swapper) external onlyOwner {

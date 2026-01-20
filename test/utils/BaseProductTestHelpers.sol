@@ -37,4 +37,8 @@ abstract contract BaseProductTestHelpers is Deployer {
             })
         );
     }
+
+    function _getTokenFromNumber(uint _number) internal view returns (TestERC20) {
+        return availableTokens[_number % availableTokens.length];
+    }
 }
