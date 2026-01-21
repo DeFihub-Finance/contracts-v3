@@ -217,6 +217,17 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         return investmentParams;
     }
 
+    /// @dev Helper to bound investment params array length to max allowed
+    /// @param investmentParams Array of CreateInvestmentParams struct
+    function _boundInvestmentParamsLength(
+        CreateInvestmentParams[] memory investmentParams
+    ) internal pure {
+        if (investmentParams.length > MAX_LIQUIDITY_INVESTMENTS)
+            assembly {
+                mstore(investmentParams, MAX_LIQUIDITY_INVESTMENTS)
+            }
+    }
+
     /// @dev Helper to bound the ticks
     /// @param tickLower Lower tick
     /// @param tickUpper Upper tick
@@ -386,6 +397,33 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         }
     }
 
+    /// @dev Helper to get the withdrawal amounts when closing a liquidity position.
+    /// @param position The liquidity position that will be closed
+    /// @param feeAmounts Array of PairAmounts struct containing the fee amounts
+    /// @return withdrawalAmounts Array of withdrawal pair amounts
+    function _getCloseWithdrawalAmounts(
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
+    ) internal view returns (Liquidity.PairAmounts[] memory withdrawalAmounts) {
+        // Close withdrawal amounts = liquidity amounts + collectable fees
+        withdrawalAmounts = _getLiquidityWithdrawalAmounts(
+            position.strategistPerformanceFeeBps,
+            feeAmounts
+        );
+
+        for (uint i; i < withdrawalAmounts.length; ++i) {
+            Liquidity.DexPosition memory dexPosition = position.dexPositions[i];
+
+            (uint amount0, uint amount1) = UniswapV3Helper.getPositionTokenAmounts(
+                dexPosition.lpTokenId,
+                dexPosition.positionManager
+            );
+
+            withdrawalAmounts[i].amount0 += amount0;
+            withdrawalAmounts[i].amount1 += amount1;
+        }
+    }
+
     /// @dev Helper to calculate token reward split on collect/close position
     /// @param _amount Token amount
     /// @param _performanceFeeBps Performance fee in bps of the position
@@ -440,15 +478,72 @@ abstract contract LiquidityTestHelpers is Test, BaseProductTestHelpers {
         }
     }
 
-    /// @dev Helper to bound investment params array length to max allowed
-    /// @param investmentParams Array of CreateInvestmentParams struct
-    function _boundInvestmentParamsLength(
-        CreateInvestmentParams[] memory investmentParams
-    ) internal pure {
-        if (investmentParams.length > MAX_LIQUIDITY_INVESTMENTS)
-            assembly {
-                mstore(investmentParams, MAX_LIQUIDITY_INVESTMENTS)
-            }
+    /// @dev Helper to map dex position amounts by token.
+    /// @param dexPositions Array of dex positions
+    /// @return positionAmountsByToken Position amounts grouped by token
+    function _getPositionAmountsByToken(
+        Liquidity.DexPosition[] memory dexPositions
+    ) internal returns (BalanceMap memory positionAmountsByToken) {
+        positionAmountsByToken = BalanceMapper.init("liquidityAmounts");
+
+        for (uint i; i < dexPositions.length; ++i) {
+            Liquidity.DexPosition memory dexPosition = dexPositions[i];
+
+            (uint amount0, uint amount1) = UniswapV3Helper.getPositionTokenAmounts(
+                dexPosition.lpTokenId,
+                dexPosition.positionManager
+            );
+
+            positionAmountsByToken.add(dexPosition.token0, amount0);
+            positionAmountsByToken.add(dexPosition.token1, amount1);
+        }
+    }
+
+    /// @dev Helper to assert that liquidity fee events are emitted on collect/close.
+    /// @param tokenId Liquidity position token id
+    /// @param position Liquidity position struct
+    /// @param feeAmounts PairAmounts struct containing dex positions fee amounts
+    function _expectEmitFeeDistributedEvents(
+        uint tokenId,
+        Liquidity.Position memory position,
+        Liquidity.PairAmounts[] memory feeAmounts
+    ) internal {
+        uint16 performanceFee = position.strategistPerformanceFeeBps;
+        Liquidity.DexPosition[] memory dexPositions = position.dexPositions;
+
+        for (uint i; i < feeAmounts.length; ++i) {
+            Liquidity.PairAmounts memory fees = feeAmounts[i];
+            Liquidity.DexPosition memory dexPosition = dexPositions[i];
+
+            Liquidity.RewardSplit memory split0 = _calculateRewardSplit(fees.amount0, performanceFee);
+            Liquidity.RewardSplit memory split1 = _calculateRewardSplit(fees.amount1, performanceFee);
+
+            vm.expectEmit(false, false, false, true, address(liquidity));
+            emit Liquidity.FeeDistributed(
+                account0,
+                position.strategy.strategist,
+                tokenId,
+                i,
+                dexPosition.token0,
+                dexPosition.token1,
+                split0.strategistAmount,
+                split1.strategistAmount,
+                UsePosition.FeeReceiver.STRATEGIST
+            );
+
+            vm.expectEmit(false, false, false, true, address(liquidity));
+            emit Liquidity.FeeDistributed(
+                account0,
+                treasury,
+                tokenId,
+                i,
+                dexPosition.token0,
+                dexPosition.token1,
+                split0.treasuryAmount,
+                split1.treasuryAmount,
+                UsePosition.FeeReceiver.TREASURY
+            );
+        }
     }
 
     /// @dev Helper to get a pool from a number
